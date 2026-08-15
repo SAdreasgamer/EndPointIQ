@@ -1,0 +1,90 @@
+{
+  "name": "endpointiq",
+  "displayName": "EndpointIQ",
+  "description": "AI-powered API intelligence — security, performance, and architecture analysis for your endpoints",
+  "version": "0.1.0",
+  "publisher": "endpointiq",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Linters"],
+  "activationEvents": [
+    "workspaceContains:**/package.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "endpointiq.analyzeEndpoint",
+        "title": "EndpointIQ: Analyze Endpoint"
+      },
+      {
+        "command": "endpointiq.securityReview",
+        "title": "EndpointIQ: Security Review"
+      },
+      {
+        "command": "endpointiq.performanceReview",
+        "title": "EndpointIQ: Performance Review"
+      },
+      {
+        "command": "endpointiq.showDependencies",
+        "title": "EndpointIQ: Show Dependencies"
+      },
+      {
+        "command": "endpointiq.refreshEndpoints",
+        "title": "EndpointIQ: Refresh Endpoints"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "endpointiq",
+          "title": "EndpointIQ",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "endpointiq": [
+        {
+          "id": "endpointiq.endpoints",
+          "name": "Endpoints"
+        }
+      ]
+    },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "endpointiq.securityReview",
+          "when": "view == endpointiq.endpoints",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "EndpointIQ",
+      "properties": {
+        "endpointiq.serverUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8421",
+          "description": "URL of the EndpointIQ API server"
+        },
+        "endpointiq.autoIndex": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically index the project on activation"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
