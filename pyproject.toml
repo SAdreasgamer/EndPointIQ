@@ -20,7 +20,8 @@ dependencies = [
     # Parsing & Analysis
     "tree-sitter>=0.21.3,<0.22",
     "tree-sitter-languages>=1.10",
-    "networkx>=3.3",
+    "networkx[default]>=3.3",
+    "numpy>=1.26",
 
     # Data
     "sqlalchemy>=2.0",
