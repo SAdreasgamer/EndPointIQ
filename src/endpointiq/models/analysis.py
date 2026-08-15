@@ -64,6 +64,12 @@ class Finding(BaseModel):
     engine: str = ""  # which engine produced this finding
     rule_id: str | None = None  # e.g. "OWASP-A01" for traceability
 
+    @property
+    def severity_rank(self) -> int:
+        """Numeric rank for sorting (lower = more severe)."""
+        order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+        return order.get(self.severity.value, 5)
+
 
 class TokenUsage(BaseModel):
     """Token usage tracking for a single LLM call."""
