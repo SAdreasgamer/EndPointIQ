@@ -205,7 +205,11 @@ async def list_endpoints(project_id: str):
 
 @app.post("/api/analysis", response_model=AnalysisResponse)
 async def run_analysis(req: AnalysisRequest):
-    """Run analysis on an endpoint."""
+    """Run analysis on an endpoint.
+
+    Uses the full LangGraph agent pipeline when GROQ_API_KEY is set,
+    falls back to static analysis engines otherwise.
+    """
     if req.project_id not in _graphs:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -217,28 +221,99 @@ async def run_analysis(req: AnalysisRequest):
     report_id = str(uuid.uuid4())[:8]
 
     all_findings: list[dict[str, Any]] = []
+    token_usage: dict[str, int] = {}
 
-    # Run requested engines
-    if req.goal_type in ("security", "full"):
-        from endpointiq.analysis.security import SecurityEngine
-        sec_engine = SecurityEngine(graph, project_root)
-        sec_findings = sec_engine.analyze_endpoint(req.endpoint)
-        for f in sec_findings:
-            all_findings.append({**f.model_dump(), "engine": "security"})
+    # ── Try LLM Agent first ──
+    import os
 
-    if req.goal_type in ("performance", "full"):
-        from endpointiq.analysis.performance import PerformanceEngine
-        perf_engine = PerformanceEngine(graph, project_root)
-        perf_findings = perf_engine.analyze_endpoint(req.endpoint)
-        for f in perf_findings:
-            all_findings.append({**f.model_dump(), "engine": "performance"})
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    use_agent = bool(api_key and api_key != "gsk_your_key_here")
 
-    if req.goal_type in ("architecture", "full"):
-        from endpointiq.analysis.architecture import ArchitectureEngine
-        arch_engine = ArchitectureEngine(graph, project_root)
-        arch_findings = arch_engine.analyze_endpoint(req.endpoint)
-        for f in arch_findings:
-            all_findings.append({**f.model_dump(), "engine": "architecture"})
+    if use_agent:
+        try:
+            from endpointiq.agent.graph import build_agent_graph
+            from endpointiq.agent.tools import set_tool_context
+            from endpointiq.context.extractor import MRCExtractor
+
+            extractor = MRCExtractor(graph, project_root)
+            set_tool_context(graph, extractor)
+
+            agent = build_agent_graph()
+            initial_state = {
+                "endpoint_name": req.endpoint,
+                "goal_type": req.goal_type,
+                "findings": [],
+                "plan": {},
+                "planned_steps": [],
+                "execution_results": [],
+                "confidence": 0.0,
+                "iteration": 0,
+                "max_iterations": 3,
+                "token_budget": 4000,
+                "token_usage": {},
+                "report": {},
+                "gaps": [],
+            }
+
+            result = agent.invoke(
+                initial_state,
+                config={"configurable": {"thread_id": f"api-{report_id}"}},
+            )
+
+            # Extract findings from agent report
+            report_data = result.get("report", {})
+            agent_findings = report_data.get("findings", [])
+            for af in agent_findings:
+                all_findings.append({
+                    "severity": af.get("severity", "info"),
+                    "title": af.get("title", ""),
+                    "description": af.get("description", ""),
+                    "file_path": af.get("file_path", ""),
+                    "line_number": af.get("line_number"),
+                    "recommendation": af.get("recommendation", ""),
+                    "evidence": af.get("evidence"),
+                    "engine": "agent-llm",
+                })
+
+            token_usage = result.get("token_usage", {})
+
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Agent failed, falling back to static: {e}")
+            use_agent = False
+
+    # ── Fallback: static analysis engines ──
+    if not use_agent or not all_findings:
+        static_findings: list[dict[str, Any]] = []
+
+        if req.goal_type in ("security", "full"):
+            from endpointiq.analysis.security import SecurityEngine
+            sec_engine = SecurityEngine(graph, project_root)
+            sec_findings = sec_engine.analyze_endpoint(req.endpoint)
+            for f in sec_findings:
+                static_findings.append({**f.model_dump(), "engine": "security"})
+
+        if req.goal_type in ("performance", "full"):
+            from endpointiq.analysis.performance import PerformanceEngine
+            perf_engine = PerformanceEngine(graph, project_root)
+            perf_findings = perf_engine.analyze_endpoint(req.endpoint)
+            for f in perf_findings:
+                static_findings.append({**f.model_dump(), "engine": "performance"})
+
+        if req.goal_type in ("architecture", "full"):
+            from endpointiq.analysis.architecture import ArchitectureEngine
+            arch_engine = ArchitectureEngine(graph, project_root)
+            arch_findings = arch_engine.analyze_endpoint(req.endpoint)
+            for f in arch_findings:
+                static_findings.append({**f.model_dump(), "engine": "architecture"})
+
+        # Merge: agent findings + static (deduplicated by title)
+        existing_titles = {f.get("title", "") for f in all_findings}
+        for sf in static_findings:
+            if sf.get("title", "") not in existing_titles:
+                all_findings.append(sf)
 
     duration_ms = int((time.monotonic() - start) * 1000)
 
@@ -248,10 +323,19 @@ async def run_analysis(req: AnalysisRequest):
         sev = finding_dict.get("severity", "info")
         severity_counts[sev] = severity_counts.get(sev, 0) + 1
 
+    engine_label = "Agent (LLM)" if use_agent else "Static"
+    token_info = ""
+    if token_usage:
+        prompt_t = token_usage.get("prompt_tokens", 0)
+        comp_t = token_usage.get("completion_tokens", 0)
+        if prompt_t or comp_t:
+            token_info = f" | Tokens: {prompt_t}+{comp_t}={prompt_t + comp_t}"
+
     summary = (
         f"{req.goal_type.title()} analysis of {req.endpoint}: "
         f"{len(all_findings)} findings "
         f"({', '.join(f'{c} {s.upper()}' for s, c in severity_counts.items())})"
+        f" [{engine_label}{token_info}]"
     )
 
     response = AnalysisResponse(
