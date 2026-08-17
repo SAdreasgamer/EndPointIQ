@@ -1,0 +1,31 @@
+{
+  "project": "/Users/shreyanand/dev_proj/EndPointIQ/examples/demo-api",
+  "endpoint": "DELETE /:id",
+  "model": "qwen/qwen3.6-27b",
+  "without_eiq": {
+    "context_bytes": 2531,
+    "prompt_tokens": 726,
+    "completion_tokens": 1981,
+    "total_tokens": 2707,
+    "latency_ms": 9755,
+    "cost_usd": 0.0013338
+  },
+  "with_eiq": {
+    "context_bytes": 403,
+    "raw_bytes": 198,
+    "compression_ratio": 0.9459459459459459,
+    "prompt_tokens": 185,
+    "completion_tokens": 1957,
+    "total_tokens": 2142,
+    "latency_ms": 7270,
+    "cost_usd": 0.0012112
+  },
+  "savings": {
+    "token_savings": 541,
+    "token_savings_pct": 74.52,
+    "cost_savings_usd": 0.000123,
+    "cost_savings_pct": 9.19,
+    "latency_savings_ms": 2485,
+    "latency_savings_pct": 25.47
+  }
+}
