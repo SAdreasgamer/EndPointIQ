@@ -168,6 +168,8 @@ def executor_node(state: AgentState) -> dict[str, Any]:
             code_context = json.dumps(attrs, default=str)
 
     # Step 2: Run LLM analysis for each step
+    from dotenv import load_dotenv
+    load_dotenv()
     api_key = os.environ.get("GROQ_API_KEY", "")
     use_llm = bool(api_key and api_key != "gsk_your_key_here")
 
@@ -457,7 +459,7 @@ def _run_llm_analysis(
     from endpointiq.agent.prompts import EXECUTOR_PROMPT
 
     llm = ChatGroq(
-        model="llama-3.1-8b-instant",
+        model="qwen/qwen3.6-27b",
         temperature=0.0,
         api_key=SecretStr(api_key),
     )

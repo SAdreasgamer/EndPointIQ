@@ -67,7 +67,7 @@ class EndpointIQConfig(BaseSettings):
 
     # ── LLM (Groq) ────────────────────────────────────
     groq_api_key: str = ""
-    llm_model: str = "llama-3.1-8b-instant"
+    llm_model: str = "qwen/qwen3.6-27b"
     llm_temperature: float = 0.0
 
     # ── Server ─────────────────────────────────────────
