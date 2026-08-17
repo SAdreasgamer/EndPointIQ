@@ -196,7 +196,7 @@ def main():
     print(f"\n  Calling Groq ({MODEL})...")
     result_without = run_llm_call(prompt_without, context_without)
 
-    print(f"  ✅ Response received")
+    print("  ✅ Response received")
     print(f"     Prompt tokens:     {result_without['prompt_tokens']:,}")
     print(f"     Completion tokens: {result_without['completion_tokens']:,}")
     print(f"     Total tokens:      {result_without['total_tokens']:,}")
@@ -222,7 +222,7 @@ def main():
     print(f"\n  Calling Groq ({MODEL})...")
     result_with = run_llm_call(prompt_with, mrc_context)
 
-    print(f"  ✅ Response received")
+    print("  ✅ Response received")
     print(f"     Prompt tokens:     {result_with['prompt_tokens']:,}")
     print(f"     Completion tokens: {result_with['completion_tokens']:,}")
     print(f"     Total tokens:      {result_with['total_tokens']:,}")
