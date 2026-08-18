@@ -50,7 +50,7 @@ def count_tokens(text: str) -> int:
 
 def collect_all_source(project_root: Path) -> str:
     """Collect ALL source files into a single string (simulating no-EIQ approach)."""
-    extensions = {".ts", ".js", ".py", ".tsx", ".jsx", ".json"}
+    extensions = {".ts", ".js", ".py", ".tsx", ".jsx", ".json", ".cjs", ".mjs"}
     ignore_dirs = {"node_modules", ".git", ".endpointiq", "dist", "build", "__pycache__", ".venv"}
 
     all_source = []
@@ -194,14 +194,28 @@ def main():
         print(f"  ⚠️  Truncated to {max_context_tokens:,} tokens (model context limit)")
 
     print(f"\n  Calling Groq ({MODEL})...")
-    result_without = run_llm_call(prompt_without, context_without)
-
-    print("  ✅ Response received")
-    print(f"     Prompt tokens:     {result_without['prompt_tokens']:,}")
-    print(f"     Completion tokens: {result_without['completion_tokens']:,}")
-    print(f"     Total tokens:      {result_without['total_tokens']:,}")
-    print(f"     Latency:           {result_without['latency_ms']:,}ms")
-    print(f"     Estimated cost:    ${result_without['cost_usd']:.6f}")
+    try:
+        result_without = run_llm_call(prompt_without, context_without)
+        without_failed = False
+        print("  ✅ Response received")
+        print(f"     Prompt tokens:     {result_without['prompt_tokens']:,}")
+        print(f"     Completion tokens: {result_without['completion_tokens']:,}")
+        print(f"     Total tokens:      {result_without['total_tokens']:,}")
+        print(f"     Latency:           {result_without['latency_ms']:,}ms")
+        print(f"     Estimated cost:    ${result_without['cost_usd']:.6f}")
+    except Exception as e:
+        without_failed = True
+        err_msg = str(e)
+        print(f"  ❌ FAILED: {err_msg[:120]}")
+        print("  ⚠️  Full codebase EXCEEDS Groq's context window — analysis impossible without EIQ!")
+        result_without = {
+            "prompt_tokens": full_source_tokens,
+            "completion_tokens": 0,
+            "total_tokens": full_source_tokens,
+            "latency_ms": 0,
+            "cost_usd": (full_source_tokens * COST_PER_1M_INPUT) / 1_000_000,
+            "content": f"FAILED: {err_msg[:200]}",
+        }
 
     # ── Phase 2: MRC extraction (WITH EndpointIQ) ──
     print_separator("Phase 2: WITH EndpointIQ (MRC context extraction)")

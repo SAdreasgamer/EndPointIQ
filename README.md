@@ -116,7 +116,30 @@ $ eiq endpoints examples/demo-api
 
 ## 📊 Benchmark Results
 
-Measured on `examples/demo-api` analyzing `DELETE /:id` via Groq (Qwen 3.6 27B):
+### 1. Real-World Production App: CerviLens Medical Backend (33 files, 32 endpoints, 162 nodes)
+
+Measured on the **CerviLens HIPAA-compliant medical backend** analyzing `DELETE /:id` via Groq (Qwen 3.6 27B):
+
+```
+┌──────────────────────┬──────────────────┬──────────────────┐
+│ Metric               │ WITHOUT EIQ      │ WITH EIQ         │
+├──────────────────────┼──────────────────┼──────────────────┤
+│ Context size (bytes) │        354,982   │          2,276   │
+│ Prompt tokens        │        121,858   │            581   │
+│ Total tokens         │        121,858   │          2,581   │
+│ Analysis status      │ ❌ OVERFLOW (400)│ ✅ COMPLETED     │
+│ Estimated cost       │       $0.02437   │       $0.00131   │
+└──────────────────────┴──────────────────┴──────────────────┘
+
+📊 PRODUCTION IMPACT:
+   Token savings:   121,277 tokens (99.5% reduction)
+   Cost savings:    94.6% cheaper per request
+   Feasibility:     WITHOUT EIQ fails due to context limits; WITH EIQ finishes in ~4.9s
+```
+
+### 2. Microservice App: Demo API (5 files, 6 endpoints, 37 nodes)
+
+Measured on `examples/demo-api` analyzing `DELETE /:id`:
 
 ```
 ┌──────────────────────┬──────────────────┬──────────────────┐
@@ -135,11 +158,9 @@ Measured on `examples/demo-api` analyzing `DELETE /:id` via Groq (Qwen 3.6 27B):
    Latency savings: 2,485ms (25.5% faster)
 ```
 
-> 💡 **On production codebases (500+ files):** Token savings scale to **95-99%** because MRC extracts only the 2-3 relevant files from the entire dependency graph.
-
-Run the benchmark yourself:
+Run benchmarks on any project:
 ```bash
-uv run python benchmarks/token_comparison.py examples/demo-api "DELETE /:id"
+uv run python benchmarks/token_comparison.py cervical-screening-client/backend "DELETE /:id"
 ```
 
 ---

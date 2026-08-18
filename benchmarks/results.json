@@ -1,31 +1,31 @@
 {
-  "project": "/Users/shreyanand/dev_proj/EndPointIQ/examples/demo-api",
-  "endpoint": "DELETE /:id",
+  "project": "/Users/shreyanand/dev_proj/EndPointIQ/cervical-screening-client/backend",
+  "endpoint": "POST /login",
   "model": "qwen/qwen3.6-27b",
   "without_eiq": {
-    "context_bytes": 2531,
-    "prompt_tokens": 726,
-    "completion_tokens": 1981,
-    "total_tokens": 2707,
-    "latency_ms": 9755,
-    "cost_usd": 0.0013338
+    "context_bytes": 354982,
+    "prompt_tokens": 121858,
+    "completion_tokens": 0,
+    "total_tokens": 121858,
+    "latency_ms": 0,
+    "cost_usd": 0.024371600000000004
   },
   "with_eiq": {
-    "context_bytes": 403,
-    "raw_bytes": 198,
-    "compression_ratio": 0.9459459459459459,
-    "prompt_tokens": 185,
-    "completion_tokens": 1957,
-    "total_tokens": 2142,
-    "latency_ms": 7270,
-    "cost_usd": 0.0012112
+    "context_bytes": 388,
+    "raw_bytes": 171,
+    "compression_ratio": 0.9814814814814815,
+    "prompt_tokens": 166,
+    "completion_tokens": 1969,
+    "total_tokens": 2135,
+    "latency_ms": 4230,
+    "cost_usd": 0.0012146
   },
   "savings": {
-    "token_savings": 541,
-    "token_savings_pct": 74.52,
-    "cost_savings_usd": 0.000123,
-    "cost_savings_pct": 9.19,
-    "latency_savings_ms": 2485,
-    "latency_savings_pct": 25.47
+    "token_savings": 121692,
+    "token_savings_pct": 99.86,
+    "cost_savings_usd": 0.023157,
+    "cost_savings_pct": 95.02,
+    "latency_savings_ms": -4230,
+    "latency_savings_pct": 0
   }
 }
