@@ -3,14 +3,14 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/LangGraph-Agentic%20AI-ff6f00?style=for-the-badge&logo=langchain&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-93%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" />
-  <img src="https://img.shields.io/badge/Token%20Savings-74.5%25-success?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Token%20Savings-Up%20to%2099.5%25-success?style=for-the-badge" />
 </p>
 
 <h1 align="center">🛡️ EndpointIQ</h1>
 
 <p align="center">
   <strong>AI-Powered API Intelligence Platform</strong><br/>
-  Autonomous endpoint analysis with knowledge graph reasoning & 74.5% token optimization
+  Autonomous endpoint analysis with knowledge graph reasoning & up to 99.5% token optimization
 </p>
 
 <p align="center">
@@ -29,13 +29,13 @@
 Every LLM-powered code analysis tool today does the same thing:
 
 ```
-📦 Your entire codebase (100K+ tokens) ──→ 🤖 LLM ──→ 💸 $$$
+📦 Your entire codebase (100K+ tokens) ──→ 🤖 LLM ──→ 💸 $$$ (or 400 Context Overflow!)
 ```
 
-**EndpointIQ flips this entirely.** Instead of dumping your whole repo into an LLM, it builds a **knowledge graph** of your API, extracts only the **minimal relevant context** using Personalized PageRank, and sends **74.5% fewer tokens** — producing **deeper, more accurate findings**.
+**EndpointIQ flips this entirely.** Instead of dumping your whole repo into an LLM, it builds a **knowledge graph** of your API, extracts only the **minimal relevant context** using Personalized PageRank, and reduces prompt tokens by **up to 99.5%** — producing **deeper, more accurate findings**.
 
 ```
-📦 Your codebase ──→ 🧠 Knowledge Graph ──→ 🎯 MRC (2KB) ──→ 🤖 LLM ──→ ✅ Precise findings
+📦 Your codebase ──→ 🧠 Knowledge Graph ──→ 🎯 MRC (~400B-2KB) ──→ 🤖 LLM ──→ ✅ Precise findings
 ```
 
 ---
@@ -45,7 +45,7 @@ Every LLM-powered code analysis tool today does the same thing:
 | Feature | What It Does |
 |---|---|
 | 🧠 **4-Agent LangGraph Pipeline** | Planner → Executor → Evaluator → Reporter with confidence-based re-planning |
-| 🎯 **MRC Algorithm** | Personalized PageRank + 4-stage compression = 74.5% fewer tokens |
+| 🎯 **MRC Algorithm** | Personalized PageRank + 4-stage compression = **74.5% – 99.5% fewer tokens** |
 | 🌐 **Knowledge Graph** | NetworkX DAG mapping endpoints → controllers → services → DB layer |
 | 🔒 **Security Engine** | Catches missing auth, IDOR, injection, rate limiting, broken access control |
 | ⚡ **Performance Engine** | Detects N+1 queries, missing pagination, cache gaps, SELECT * |

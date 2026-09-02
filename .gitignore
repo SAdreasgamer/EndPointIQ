@@ -51,3 +51,7 @@ uv.lock
 node_modules/
 vscode-extension/out/
 *.vsix
+
+# External benchmark / test repos
+cervical-screening-client/
+job-tracker-main/
