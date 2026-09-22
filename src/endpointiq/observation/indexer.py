@@ -20,6 +20,7 @@ from endpointiq.core.config import EndpointIQConfig
 from endpointiq.core.events import EventBus
 from endpointiq.knowledge.graph import KnowledgeGraph
 from endpointiq.models.endpoint import EndpointDefinition
+from endpointiq.models.graph import EdgeType, GraphEdge, GraphNode, NodeType
 from endpointiq.observation.builders import (
     CallGraphBuilder,
     DependencyGraphBuilder,
@@ -115,6 +116,10 @@ class ProjectIndexer:
             except Exception as e:
                 logger.warning(f"Failed to index {file_path}: {e}")
 
+        # 5. Post-processing: resolve cross-file references
+        cross_file_links = self._resolve_cross_file_references()
+        logger.info(f"Resolved {cross_file_links} cross-file references")
+
         duration_ms = int((time.monotonic() - start) * 1000)
 
         stats = {
@@ -122,6 +127,7 @@ class ProjectIndexer:
             "endpoints": len(self._all_endpoints),
             "nodes": self.graph.node_count,
             "edges": self.graph.edge_count,
+            "cross_file_links": cross_file_links,
             "framework": self.detection.framework if self.detection else "unknown",
             "confidence": self.detection.confidence if self.detection else 0.0,
             "duration_ms": duration_ms,
@@ -130,7 +136,8 @@ class ProjectIndexer:
         logger.info(
             f"Full index complete: {stats['files']} files, "
             f"{stats['endpoints']} endpoints, "
-            f"{stats['nodes']} nodes, {stats['edges']} edges "
+            f"{stats['nodes']} nodes, {stats['edges']} edges, "
+            f"{cross_file_links} cross-file links "
             f"in {duration_ms}ms"
         )
 
@@ -228,13 +235,8 @@ class ProjectIndexer:
             )
             self.graph.upsert_subgraph(dep_nodes, dep_edges)
 
-        # 3. Build call graph (CALLS edges)
-        call_edges = self.call_builder.build_from_symbols(
-            parse_result.symbols, rel_path, source
-        )
-        self.graph.upsert_edges(call_edges)
-
-        # 4. Extract endpoints via framework plugin
+        # 3. Extract endpoints via framework plugin first (so we know route handler nodes)
+        handler_nodes: list[GraphNode] = []
         if self.detection:
             plugin = self.plugin_manager.get_plugin(self.detection.framework)
             if plugin:
@@ -242,6 +244,177 @@ class ProjectIndexer:
                 if extraction.endpoints:
                     self._all_endpoints.extend(extraction.endpoints)
                     self.graph.upsert_subgraph(extraction.nodes, extraction.edges)
+                    handler_nodes = [n for n in extraction.nodes if n.type == NodeType.FUNCTION]
+
+        # 4. Build call graph (CALLS edges + placeholder nodes)
+        call_nodes, call_edges = self.call_builder.build_calls(
+            rel_path, parse_result.symbols, handler_nodes, parse_result.imports, source, language
+        )
+        self.graph.upsert_subgraph(call_nodes, call_edges)
+
+    def _resolve_cross_file_references(self) -> int:
+        """Post-indexing pass: resolve placeholder nodes to real cross-file definitions.
+
+        After all files are indexed, this method:
+        1. Builds a global symbol registry (name + file → node_id)
+        2. Builds an import map per file (symbol_name → source_file)
+        3. For each placeholder node, finds the real definition in the imported file
+        4. Rewires edges from placeholder → real definition node
+
+        This handles three call patterns:
+        - Direct imports:       await getArticles()        → article.service.ts
+        - Dot-method imports:   authController.login       → auth.controller.js
+        - Middleware imports:    authMiddleware             → auth.ts
+
+        Returns:
+            Number of cross-file links created.
+        """
+        links_created = 0
+        nx = self.graph.graph
+
+        # ── Step 1: Build global symbol registry ──
+        # Maps (symbol_name, file_path) → node_id for all real (non-placeholder) nodes
+        symbol_registry: dict[tuple[str, str], str] = {}
+        for node_id, attrs in nx.nodes(data=True):
+            name = attrs.get("qualified_name", "")
+            file_path = attrs.get("file_path", "")
+            metadata = attrs.get("metadata", {})
+            is_placeholder = metadata.get("is_placeholder", False) if isinstance(metadata, dict) else False
+            if not is_placeholder and file_path and name:
+                symbol_registry[(name, file_path)] = node_id
+
+        # ── Step 2: Build import map per file ──
+        # Maps importing_file → {symbol_name: target_file}
+        import_maps: dict[str, dict[str, str]] = {}
+        for u, v, attrs in nx.edges(data=True):
+            if attrs.get("type") != "depends_on":
+                continue
+            source_data = nx.nodes.get(u, {})
+            target_data = nx.nodes.get(v, {})
+            source_file = source_data.get("qualified_name", "")
+            target_file = target_data.get("qualified_name", "")
+            metadata = attrs.get("metadata", {})
+            imported_names = metadata.get("names", []) if isinstance(metadata, dict) else []
+            is_default = metadata.get("is_default", False) if isinstance(metadata, dict) else False
+
+            if source_file and target_file:
+                if source_file not in import_maps:
+                    import_maps[source_file] = {}
+                for name in imported_names:
+                    import_maps[source_file][name] = target_file
+                # For default imports, also map the module basename
+                # e.g. `import auth from '../auth/auth'` → auth → auth.ts
+                if is_default:
+                    module_name = metadata.get("module", "")
+                    if module_name:
+                        basename = module_name.rsplit("/", 1)[-1]
+                        import_maps[source_file][basename] = target_file
+
+        # ── Step 3: Resolve placeholders ──
+        for node_id, attrs in list(nx.nodes(data=True)):
+            metadata = attrs.get("metadata", {})
+            is_placeholder = metadata.get("is_placeholder", False) if isinstance(metadata, dict) else False
+            if not is_placeholder:
+                continue
+
+            placeholder_name = attrs.get("qualified_name", "")
+            placeholder_file = attrs.get("file_path", "")
+
+            if not placeholder_name or not placeholder_file:
+                continue
+
+            # Strip call parentheses if present: validate(...) -> validate
+            clean_name = placeholder_name.split("(")[0].strip()
+            if not clean_name:
+                continue
+
+            # Determine which symbol to look up in the import map
+            if "." in clean_name:
+                parts = clean_name.split(".")
+                import_lookup = parts[0]  # The imported module/variable name
+                method_name = parts[-1]    # The method being called
+            else:
+                import_lookup = clean_name
+                method_name = clean_name
+
+            file_imports = import_maps.get(placeholder_file, {})
+            source_file = file_imports.get(import_lookup, "")
+
+            # Transitive re-exports (barrel files e.g. services/index.js -> auth.service.js)
+            visited_files: set[str] = set()
+            while source_file and source_file in import_maps and import_lookup in import_maps[source_file]:
+                if source_file in visited_files:
+                    break
+                visited_files.add(source_file)
+                source_file = import_maps[source_file][import_lookup]
+
+            # If not found via direct import_lookup, check if method_name was imported
+            if not source_file:
+                source_file = file_imports.get(method_name, "")
+
+            # Find the real definition node in the target or local file
+            real_node_id = None
+
+            if not source_file:
+                # Could be an intra-file call to a function in the same file
+                real_node_id = symbol_registry.get((method_name, placeholder_file))
+                if not real_node_id:
+                    real_node_id = symbol_registry.get((clean_name, placeholder_file))
+            else:
+                # Try exact match: (method_name, source_file)
+                real_node_id = symbol_registry.get((method_name, source_file))
+
+                # Try qualified name match: (full_name, source_file)
+                if not real_node_id:
+                    real_node_id = symbol_registry.get((clean_name, source_file))
+
+                # Try matching by just the symbol name across all nodes in the source file
+                if not real_node_id:
+                    for (name, fpath), nid in symbol_registry.items():
+                        if fpath == source_file and name == method_name:
+                            real_node_id = nid
+                            break
+
+                # If source_file is a barrel/index file, search among files it re-exports
+                if not real_node_id and ("index" in source_file or "__init__" in source_file):
+                    barrel_targets = set(import_maps.get(source_file, {}).values())
+                    for btarget in barrel_targets:
+                        real_node_id = symbol_registry.get((method_name, btarget))
+                        if not real_node_id:
+                            real_node_id = symbol_registry.get((clean_name, btarget))
+                        if real_node_id:
+                            source_file = btarget
+                            break
+
+            if not real_node_id or real_node_id == node_id:
+                continue
+
+            # ── Step 4: Rewire edges ──
+            for src, _, edge_attrs in list(nx.in_edges(node_id, data=True)):
+                edge_type_str = edge_attrs.get("type", "")
+                try:
+                    edge_type = EdgeType(edge_type_str)
+                except ValueError:
+                    continue
+                self.graph.upsert_edge(GraphEdge(
+                    source=src,
+                    target=real_node_id,
+                    type=edge_type,
+                    provenance=edge_attrs.get("provenance", ""),
+                    metadata={"cross_file": True},
+                ))
+                nx.remove_edge(src, node_id)
+                links_created += 1
+                logger.debug(
+                    f"Cross-file link: {placeholder_name} in {placeholder_file} "
+                    f"→ real definition in {source_file}"
+                )
+
+            # Prune rewired placeholder node if it has no remaining in-edges
+            if nx.in_degree(node_id) == 0:
+                nx.remove_node(node_id)
+
+        return links_created
 
     def _scan_files(self, project_root: Path) -> list[str]:
         """Scan the project directory for all indexable source files."""

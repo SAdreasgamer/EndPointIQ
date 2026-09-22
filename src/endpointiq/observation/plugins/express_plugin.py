@@ -272,11 +272,23 @@ class ExpressPlugin(IFrameworkPlugin):
             line_start=ep.line_start,
             line_end=ep.line_end,
             provenance=file_path,
-            metadata={"method": str(http_method), "path": full_path},
+            metadata={
+                "method": str(http_method),
+                "path": full_path,
+                "handler_ref": handler_name,
+                "middleware_refs": mw_names,
+            },
         )
         nodes.append(ep_node)
 
-        # Handler node
+        # Handler node — tag as placeholder if it's a named imported reference
+        # (anonymous functions like "(req, res) => {...}" are NOT placeholders)
+        is_handler_placeholder = (
+            handler_name != "anonymous"
+            and not handler_name.startswith("(")
+            and not handler_name.startswith("function")
+            and not handler_name.startswith("async")
+        )
         handler_node_id = _make_node_id("function", handler_name, file_path)
         handler_node = GraphNode(
             id=handler_node_id,
@@ -286,6 +298,7 @@ class ExpressPlugin(IFrameworkPlugin):
             line_start=ep.line_start,
             line_end=ep.line_end,
             provenance=file_path,
+            metadata={"is_placeholder": is_handler_placeholder},
         )
         nodes.append(handler_node)
         edges.append(GraphEdge(
@@ -295,7 +308,8 @@ class ExpressPlugin(IFrameworkPlugin):
             provenance=file_path,
         ))
 
-        # Middleware nodes
+        # Middleware nodes — always tagged as placeholders since they are
+        # references to functions defined elsewhere (e.g. authMiddleware, validate)
         for mw in mw_names:
             mw_node_id = _make_node_id("middleware", mw, file_path)
             mw_node = GraphNode(
@@ -306,6 +320,7 @@ class ExpressPlugin(IFrameworkPlugin):
                 line_start=ep.line_start,
                 line_end=ep.line_end,
                 provenance=file_path,
+                metadata={"is_placeholder": True},
             )
             nodes.append(mw_node)
             edges.append(GraphEdge(

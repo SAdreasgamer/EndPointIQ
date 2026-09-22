@@ -1,0 +1,163 @@
+{
+  "_comment": "Ground truth: files that EndpointIQ's static graph analysis SHOULD find for each endpoint. Tests full cross-file call-graph tracing: Route → Middleware → Controller → Service → Models/Utilities.",
+
+  "demo-api": {
+    "project_root": "examples/demo-api",
+    "endpoints": {
+      "DELETE /:id": {
+        "expected_files": [
+          "src/routes/userRoutes.ts"
+        ],
+        "notes": "Inline handler, no middleware. Security vuln: no auth."
+      },
+      "POST /": {
+        "expected_files": [
+          "src/routes/userRoutes.ts",
+          "src/middleware/auth.ts"
+        ],
+        "notes": "authMiddleware is referenced via SECURED_BY edge."
+      },
+      "PUT /:id": {
+        "expected_files": [
+          "src/routes/userRoutes.ts",
+          "src/middleware/auth.ts",
+          "src/middleware/validate.ts"
+        ],
+        "notes": "Both authMiddleware and validateUser referenced via SECURED_BY/VALIDATES edges."
+      },
+      "GET /": {
+        "expected_files": [
+          "src/routes/userRoutes.ts"
+        ],
+        "notes": "Inline handler, no middleware, no external calls."
+      },
+      "GET /:id": {
+        "expected_files": [
+          "src/routes/userRoutes.ts"
+        ],
+        "notes": "Inline handler, no middleware."
+      }
+    }
+  },
+
+  "realworld-express": {
+    "project_root": "benchmarks/repos/realworld-express",
+    "endpoints": {
+      "POST /users": {
+        "expected_files": [
+          "src/app/routes/auth/auth.controller.ts",
+          "src/app/routes/auth/auth.service.ts",
+          "src/app/routes/auth/token.utils.ts"
+        ],
+        "notes": "Inline handler calls createUser (in auth.service.ts) which uses token.utils.ts."
+      },
+      "POST /users/login": {
+        "expected_files": [
+          "src/app/routes/auth/auth.controller.ts",
+          "src/app/routes/auth/auth.service.ts",
+          "src/app/routes/auth/token.utils.ts"
+        ],
+        "notes": "Inline handler calls login (in auth.service.ts) which uses token.utils.ts."
+      },
+      "GET /user": {
+        "expected_files": [
+          "src/app/routes/auth/auth.controller.ts",
+          "src/app/routes/auth/auth.ts",
+          "src/app/routes/auth/auth.service.ts"
+        ],
+        "notes": "auth.required middleware detected (SECURED_BY to auth.ts). Handler calls getCurrentUser in auth.service.ts."
+      },
+      "GET /articles": {
+        "expected_files": [
+          "src/app/routes/article/article.controller.ts",
+          "src/app/routes/auth/auth.ts",
+          "src/app/routes/article/article.service.ts"
+        ],
+        "notes": "auth.optional middleware (in auth.ts). Handler calls getArticles (in article.service.ts)."
+      },
+      "POST /articles": {
+        "expected_files": [
+          "src/app/routes/article/article.controller.ts",
+          "src/app/routes/auth/auth.ts",
+          "src/app/routes/article/article.service.ts"
+        ],
+        "notes": "auth.required middleware (in auth.ts). Handler calls createArticle (in article.service.ts)."
+      },
+      "DELETE /articles/:slug": {
+        "expected_files": [
+          "src/app/routes/article/article.controller.ts",
+          "src/app/routes/auth/auth.ts",
+          "src/app/routes/article/article.service.ts"
+        ],
+        "notes": "auth.required middleware (in auth.ts). Handler calls deleteArticle (in article.service.ts)."
+      },
+      "GET /profiles/:username": {
+        "expected_files": [
+          "src/app/routes/profile/profile.controller.ts",
+          "src/app/routes/auth/auth.ts",
+          "src/app/routes/profile/profile.service.ts"
+        ],
+        "notes": "auth.optional middleware (in auth.ts). Handler calls getProfile (in profile.service.ts)."
+      },
+      "GET /tags": {
+        "expected_files": [
+          "src/app/routes/tag/tag.controller.ts",
+          "src/app/routes/tag/tag.service.ts"
+        ],
+        "notes": "Handler calls getTags (cross-file in tag.service.ts)."
+      }
+    }
+  },
+
+  "express-boilerplate": {
+    "project_root": "benchmarks/repos/express-boilerplate",
+    "endpoints": {
+      "POST /register": {
+        "expected_files": [
+          "src/routes/v1/auth.route.js",
+          "src/middlewares/validate.js",
+          "src/controllers/auth.controller.js",
+          "src/services/auth.service.js",
+          "src/services/user.service.js"
+        ],
+        "notes": "validate middleware + authController.register -> userService.createUser."
+      },
+      "POST /login": {
+        "expected_files": [
+          "src/routes/v1/auth.route.js",
+          "src/middlewares/validate.js",
+          "src/controllers/auth.controller.js",
+          "src/services/auth.service.js"
+        ],
+        "notes": "validate middleware + authController.login -> authService.loginUserWithEmailAndPassword."
+      },
+      "POST /forgot-password": {
+        "expected_files": [
+          "src/routes/v1/auth.route.js",
+          "src/middlewares/validate.js",
+          "src/controllers/auth.controller.js",
+          "src/services/email.service.js"
+        ],
+        "notes": "validate middleware + authController.forgotPassword -> emailService.sendResetPasswordEmail."
+      },
+      "POST /reset-password": {
+        "expected_files": [
+          "src/routes/v1/auth.route.js",
+          "src/middlewares/validate.js",
+          "src/controllers/auth.controller.js",
+          "src/services/auth.service.js"
+        ],
+        "notes": "validate middleware + authController.resetPassword -> authService.resetPassword."
+      },
+      "POST /send-verification-email": {
+        "expected_files": [
+          "src/routes/v1/auth.route.js",
+          "src/middlewares/auth.js",
+          "src/controllers/auth.controller.js",
+          "src/services/email.service.js"
+        ],
+        "notes": "auth middleware + authController.sendVerificationEmail -> emailService.sendVerificationEmail."
+      }
+    }
+  }
+}

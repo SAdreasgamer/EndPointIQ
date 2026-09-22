@@ -1,100 +1,170 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/EndpointIQ-AI%20Powered-blueviolet?style=for-the-badge&logo=openai&logoColor=white" />
+  <img src="https://img.shields.io/badge/EndpointIQ-API%20Intelligence-blueviolet?style=for-the-badge&logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/LangGraph-Agentic%20AI-ff6f00?style=for-the-badge&logo=langchain&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-93%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" />
-  <img src="https://img.shields.io/badge/Token%20Savings-Up%20to%2099.5%25-success?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Token%20Reduction-78.8%25%20Mean-success?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Latency-11ms%20P95-informational?style=for-the-badge" />
 </p>
 
 <h1 align="center">🛡️ EndpointIQ</h1>
 
 <p align="center">
-  <strong>AI-Powered API Intelligence Platform</strong><br/>
-  Autonomous endpoint analysis with knowledge graph reasoning & up to 99.5% token optimization
+  <strong>Cross-File API Code Analysis & Intelligence Platform</strong><br/>
+  Traces full request lifecycles (<code>Route → Middleware → Controller → Service</code>) to extract minimal relevant context, slashing LLM prompt tokens by 78.8% in under 11ms.
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-architecture">Architecture</a> •
+  <a href="#-the-problem">The Problem</a> •
+  <a href="#-key-highlights">Highlights</a> •
   <a href="#-benchmark-results">Benchmarks</a> •
-  <a href="#-demo">Demo</a> •
-  <a href="#-tech-stack">Tech Stack</a> •
-  <a href="#-vs-code-extension">VS Code Extension</a>
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-vs-code-extension">VS Code Extension</a> •
+  <a href="#-tech-stack">Tech Stack</a>
 </p>
 
 ---
 
 ## 🤔 The Problem
 
-Every LLM-powered code analysis tool today does the same thing:
+When developers use AI to audit or review backend code, existing tools face an unavoidable trade-off:
+
+1. **Single-File Isolation**: The AI only sees the open route file (`routes/user.ts`), completely missing shared authentication middleware (`middleware/auth.ts`) and service-layer logic.
+2. **Naive Repository Dumps**: The tool dumps the entire codebase (25,000–100,000+ tokens) into the prompt. This causes **context window overflow**, inflates API inference costs, and triggers the **"Lost-in-the-Middle"** problem where models hallucinate or miss critical bugs amidst thousands of lines of unrelated code.
 
 ```
-📦 Your entire codebase (100K+ tokens) ──→ 🤖 LLM ──→ 💸 $$$ (or 400 Context Overflow!)
+❌ Naive Approach:
+📦 Entire Codebase (25K-100K+ tokens) ──→ 🤖 LLM ──→ 💸 High Cost / Context Overflow / Hallucinations
 ```
 
-**EndpointIQ flips this entirely.** Instead of dumping your whole repo into an LLM, it builds a **knowledge graph** of your API, extracts only the **minimal relevant context** using Personalized PageRank, and reduces prompt tokens by **up to 99.5%** — producing **deeper, more accurate findings**.
+**EndpointIQ solves this with static call-graph tracing.** It parses the Abstract Syntax Tree (AST) of your backend, traces where each route actually executes across files, and extracts only the minimal code path needed for analysis:
 
 ```
-📦 Your codebase ──→ 🧠 Knowledge Graph ──→ 🎯 MRC (~400B-2KB) ──→ 🤖 LLM ──→ ✅ Precise findings
+✅ EndpointIQ Approach:
+📦 Codebase ──→ 🧠 AST Call Graph ──→ 🎯 Focused Context (~3.9K tokens) ──→ 🤖 LLM ──→ 🎯 Deep, Exact Findings
 ```
 
 ---
 
 ## ✨ Key Highlights
 
-| Feature | What It Does |
-|---|---|
-| 🧠 **4-Agent LangGraph Pipeline** | Planner → Executor → Evaluator → Reporter with confidence-based re-planning |
-| 🎯 **MRC Algorithm** | Personalized PageRank + 4-stage compression = **74.5% – 99.5% fewer tokens** |
-| 🌐 **Knowledge Graph** | NetworkX DAG mapping endpoints → controllers → services → DB layer |
-| 🔒 **Security Engine** | Catches missing auth, IDOR, injection, rate limiting, broken access control |
-| ⚡ **Performance Engine** | Detects N+1 queries, missing pagination, cache gaps, SELECT * |
-| 🏛️ **Architecture Engine** | Flags layer violations, circular deps, god classes, high coupling |
-| 🖥️ **3 Interfaces** | CLI (Typer + Rich) · REST API (FastAPI) · VS Code Extension |
-| 🧪 **93 Tests Passing** | Full coverage with mypy + ruff, zero errors |
+| Feature | Description |
+|:---|:---|
+| 🌐 **Cross-File Call Graph** | Traces execution paths across files (`Route → Middleware → Controller → Service → Model`) with CommonJS barrel re-export support. |
+| 🎯 **Targeted Context Extraction** | Graph traversal isolates only the code an endpoint touches, achieving a **78.8% mean token reduction** in **11ms P95**. |
+| 🔍 **100% Dependency Recall** | Verified against human-traced ground-truth call chains across 18 endpoints in 3 open-source codebases with zero false negatives. |
+| 🔒 **Security & Quality Engines** | Automated checks flag unverified authentication tokens in middleware, missing input validation, rate-limiting gaps, and unindexed queries. |
+| 🤖 **Multi-Agent Evaluation Loop** | Optional 4-node LangGraph StateGraph (Planner → Executor → Evaluator → Reporter) with confidence routing to eliminate low-quality findings. |
+| 🖥️ **3 Developer Interfaces** | Interactive terminal CLI (`Typer` + `Rich`), local background daemon (`FastAPI`), and native **VS Code Extension** (`TypeScript`). |
+| 🧪 **93 Automated Tests** | Comprehensive test suite covering parsers, graph builders, extraction algorithms, and REST APIs with zero regressions. |
 
 ---
 
-## 🎬 Demo
+## 📊 Benchmark Results
 
-### CLI — Security Analysis
+EndpointIQ includes an automated, reproducible multi-repo benchmark suite ([`benchmarks/run_benchmark.py`](benchmarks/run_benchmark.py)) evaluated against human-verified ground truth ([`benchmarks/ground_truth.json`](benchmarks/ground_truth.json)).
 
-```bash
-$ eiq security "DELETE /:id" --project-dir examples/demo-api
-```
+### Headline Metrics (36 Endpoints across 3 Repositories)
 
-```
-╭──────────────── 🔒 Security Analysis: DELETE /:id ─────────────────╮
-│ ┏━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓│
-│ ┃     ┃ Severity   ┃ Title                     ┃ File            ┃│
-│ ┡━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩│
-│ │ 🔴  │ CRITICAL   │ Missing Authentication    │ userRoutes.ts   ││
-│ │ 🟡  │ MEDIUM     │ Missing Rate Limiting     │ userRoutes.ts   ││
-│ │ 🔵  │ LOW        │ Missing Security Headers  │                 ││
-│ └─────┴────────────┴───────────────────────────┴─────────────────┘│
-╰───────────────────────────────────────────────────────────────────╯
-  Total: 3 findings — 1 CRITICAL · 1 MEDIUM · 1 LOW
-```
+| Metric | Mean | Median | P95 |
+|:---|:---:|:---:|:---:|
+| **Recall (18 Ground-Truth Endpoints)** | **1.00 (100%)** | **1.00** | **1.00** |
+| **Token Reduction %** | **78.8%** | **70.8%** | **99.9%** |
+| **Extraction Latency** | **12.6ms** | **8.5ms** | **11.0ms** |
+| **F1 Score** | **0.66** | **0.67** | **1.00** |
+| **Indexing Throughput** | **300–500 files/sec** | — | — |
 
-### LLM Agent — Deep Semantic Analysis (via Groq)
+### Per-Repository Summary
 
-When connected to an LLM, the agent finds vulnerabilities that static analysis can't:
+| Repository | Stack | Files / LOC | Full Repo Tokens | Extracted Tokens | Mean Reduction | Recall |
+|:---|:---|:---:|:---:|:---:|:---:|:---:|
+| **`demo-api`** | TypeScript (Express) | 5 files / 88 LOC | 577 | 44 – 254 | **79.5%** | **1.00** |
+| **`realworld-express`** | TypeScript (Conduit API) | 39 files / 2,489 LOC | 13,702 | 1,760 – 4,000 | **73.9%** | **1.00** |
+| **`express-boilerplate`** | JavaScript (Production REST) | 50 files / 3,856 LOC | 27,165 | ~3,900 – 4,000 | **88.2%** | **1.00** |
 
-```
-📋 Report: 7 findings (3 CRITICAL, 1 HIGH, 2 MEDIUM, 1 INFO)
+> Read the complete breakdown in [`benchmarks/BENCHMARK_REPORT.md`](benchmarks/BENCHMARK_REPORT.md).
 
-   🔴 [CRITICAL] Missing Authentication and Authorization Checks
-   🔴 [CRITICAL] Insecure Direct Object Reference (IDOR)
-   🔴 [CRITICAL] Broken Access Control
-   🟠 [HIGH]     SQL/NoSQL Injection via Unsanitized Route Parameter
-   🟡 [MEDIUM]   Missing Input Validation & Type Checking
-   🟡 [MEDIUM]   Unhandled Database Errors & Information Leakage
-```
-
-### Endpoint Discovery
+### Reproduce the Benchmarks
 
 ```bash
-$ eiq endpoints examples/demo-api
+# Run the offline benchmark suite (auto-clones external benchmark repos)
+uv run python benchmarks/run_benchmark.py
+
+# Run with live LLM comparison (requires GROQ_API_KEY)
+uv run python benchmarks/run_benchmark.py --llm
+```
+
+---
+
+## 🎬 Real Finding Example: Cross-File Vulnerability Discovery
+
+When analyzing `POST /` in `examples/demo-api`:
+- **The Route** (`src/routes/userRoutes.ts`): Appears secure because `authMiddleware` is attached.
+- **The Middleware** (`src/middleware/auth.ts`): Contains an unverified token implementation (`// TODO: validate token`).
+
+Single-file analyzers reviewing only `userRoutes.ts` miss this bug completely. EndpointIQ traces the cross-file dependency into the context window, enabling the model to surface:
+
+```
+[CRITICAL] Authentication Middleware Does Not Validate Tokens
+File: src/middleware/auth.ts:9-12
+Detail: authMiddleware extracts Bearer tokens but does not verify signature or validity (marked with TODO),
+        allowing attackers to bypass authentication with arbitrary token strings.
+Recommendation: Implement cryptographic verification using jwt.verify() before setting req.user.
+```
+
+---
+
+## 🏗️ Architecture
+
+EndpointIQ is structured in three modular layers:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        1. PRESENTATION LAYER                           │
+│     CLI (Typer + Rich)   │   VS Code Extension (TypeScript UI)         │
+├────────────────────────────────────────────────────────────────────────┤
+│                        2. LOCAL SERVICE LAYER                          │
+│     FastAPI Daemon (localhost:8421)   │   REST API (/api/endpoints)    │
+├────────────────────────────────────────────────────────────────────────┤
+│                        3. CORE ANALYSIS ENGINE                         │
+│                                                                        │
+│   ┌───────────────────────┐         ┌──────────────────────────────┐   │
+│   │ Observation Pipeline  │         │ Knowledge Graph (NetworkX)   │   │
+│   │ • tree-sitter Parser  │────────▶│ • Typed Nodes & Edges        │   │
+│   │ • Cross-File Resolver │         │ • Route → Service Traversal  │   │
+│   └───────────────────────┘         └──────────────┬───────────────┘   │
+│                                                    │                   │
+│                                                    ▼                   │
+│   ┌───────────────────────┐         ┌──────────────────────────────┐   │
+│   │ Analysis & LLM Agents │◀────────│ Context Extractor (MRC)      │   │
+│   │ • Rule-Based Audits   │         │ • Subgraph Traversal         │   │
+│   │ • LangGraph Pipeline  │         │ • 78.8% Token Pruning (11ms) │   │
+│   └───────────────────────┘         └──────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Observation & Parsing**: `tree-sitter` parses source files into Abstract Syntax Trees. The indexer discovers routes, middleware, controllers, and import statements, resolving cross-file references and CommonJS barrel re-exports.
+2. **In-Memory Knowledge Graph**: Components become typed nodes (`endpoint`, `middleware`, `controller`, `service`), connected by typed edges (`CALLS`, `SECURED_BY`, `DEPENDS_ON`, `VALIDATES`).
+3. **Context Extraction (MRC)**: When an endpoint is analyzed, the extractor walks the graph starting from that endpoint node, isolating only the reachable execution path within a token budget.
+4. **Analysis & Reporting**: Rule-based checks and an optional LangGraph agent audit the focused context, returning structured JSON reports with file paths, line numbers, and remediation guidance.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+
+```bash
+git clone https://github.com/SAdreasgamer/EndPointIQ.git
+cd EndPointIQ
+uv sync    # or: pip install -e .
+```
+
+### 2. Discover Endpoints
+
+```bash
+# Scan a project and display discovered endpoints in a formatted table
+eiq endpoints examples/demo-api
 ```
 
 ```
@@ -107,284 +177,87 @@ $ eiq endpoints examples/demo-api
 │ 3   │ POST /                │ endpoint │ src/routes/userRoutes.ts │
 │ 4   │ PUT /:id              │ endpoint │ src/routes/userRoutes.ts │
 │ 5   │ DELETE /:id           │ endpoint │ src/routes/userRoutes.ts │
-│ 6   │ GET /                 │ endpoint │ src/routes/productRoutes │
 └─────┴───────────────────────┴──────────┴──────────────────────────┘
-  Total: 6 endpoints
 ```
 
----
-
-## 📊 Benchmark Results
-
-### 1. Real-World Production App: CerviLens Medical Backend (33 files, 32 endpoints, 162 nodes)
-
-Measured on the **CerviLens HIPAA-compliant medical backend** analyzing `DELETE /:id` via Groq (Qwen 3.6 27B):
-
-```
-┌──────────────────────┬──────────────────┬──────────────────┐
-│ Metric               │ WITHOUT EIQ      │ WITH EIQ         │
-├──────────────────────┼──────────────────┼──────────────────┤
-│ Context size (bytes) │        354,982   │          2,276   │
-│ Prompt tokens        │        121,858   │            581   │
-│ Total tokens         │        121,858   │          2,581   │
-│ Analysis status      │ ❌ OVERFLOW (400)│ ✅ COMPLETED     │
-│ Estimated cost       │       $0.02437   │       $0.00131   │
-└──────────────────────┴──────────────────┴──────────────────┘
-
-📊 PRODUCTION IMPACT:
-   Token savings:   121,277 tokens (99.5% reduction)
-   Cost savings:    94.6% cheaper per request
-   Feasibility:     WITHOUT EIQ fails due to context limits; WITH EIQ finishes in ~4.9s
-```
-
-### 2. Microservice App: Demo API (5 files, 6 endpoints, 37 nodes)
-
-Measured on `examples/demo-api` analyzing `DELETE /:id`:
-
-```
-┌──────────────────────┬──────────────────┬──────────────────┐
-│ Metric               │ WITHOUT EIQ      │ WITH EIQ         │
-├──────────────────────┼──────────────────┼──────────────────┤
-│ Context size (bytes) │          2,531   │            403   │
-│ Prompt tokens        │            726   │            185   │
-│ Total tokens         │          2,707   │          2,142   │
-│ Latency              │        9,755ms   │        7,270ms   │
-│ Estimated cost       │      $0.001334   │      $0.001211   │
-└──────────────────────┴──────────────────┴──────────────────┘
-
-📊 SAVINGS:
-   Token savings:   541 tokens (74.5% reduction)
-   Cost savings:    9.2% cheaper per request
-   Latency savings: 2,485ms (25.5% faster)
-```
-
-Run benchmarks on any project:
-```bash
-uv run python benchmarks/token_comparison.py cervical-screening-client/backend "DELETE /:id"
-```
-
----
-
-## 🏗️ Architecture
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    DELIVERY LAYER                                │
-│     CLI (Typer + Rich)  │  FastAPI Server  │  VS Code Extension  │
-├──────────────────────────────────────────────────────────────────┤
-│                    ANALYSIS LAYER                                │
-│    ┌──────────┐    ┌──────────┐    ┌──────────────┐             │
-│    │ Security │    │  Perf    │    │ Architecture │             │
-│    │ Engine   │    │  Engine  │    │   Engine     │             │
-│    └──────────┘    └──────────┘    └──────────────┘             │
-├──────────────────────────────────────────────────────────────────┤
-│                    AGENT LAYER (LangGraph)                       │
-│                                                                  │
-│    ┌──────────┐    ┌──────────┐    ┌───────────┐   ┌──────────┐ │
-│    │ Planner  │───▶│ Executor │───▶│ Evaluator │──▶│ Reporter │ │
-│    └──────────┘    └──────────┘    └───────────┘   └──────────┘ │
-│         ▲                               │                        │
-│         └──── re-plan (confidence < 0.7)┘                        │
-├──────────────────────────────────────────────────────────────────┤
-│                    CONTEXT ENGINE                                │
-│    Personalized PageRank  →  4-Stage Compression Pipeline        │
-│    (Import Pruning → Comment Strip → Whitespace → Summarize)    │
-├──────────────────────────────────────────────────────────────────┤
-│                    KNOWLEDGE GRAPH (NetworkX)                    │
-│    Endpoints → Controllers → Services → Repositories → DB       │
-│    Edge types: CALLS, SECURED_BY, DEPENDS_ON, VALIDATES         │
-├──────────────────────────────────────────────────────────────────┤
-│                    OBSERVATION PIPELINE                          │
-│    File Watcher → tree-sitter AST Parser → Incremental Indexer  │
-│    Framework Plugins: Express.js (more coming)                   │
-├──────────────────────────────────────────────────────────────────┤
-│                    CORE                                          │
-│    Config (Pydantic) │ SQLite (SQLAlchemy) │ Event Bus │ Models  │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### How It Works
-
-1. **🔍 Observation** — tree-sitter parses your AST, auto-detects Express.js, discovers every endpoint, middleware, controller, and service.
-
-2. **🌐 Knowledge Graph** — Builds a directed graph connecting `POST /api/users` → `authMiddleware` → `UserController.create()` → `UserRepository.save()` with typed edges.
-
-3. **🎯 MRC Extraction** — When you ask "analyze DELETE /:id for security", Personalized PageRank walks the graph from that endpoint, scores every node by relevance, and extracts only the top-K nodes. Then a 4-stage compression pipeline strips comments, prunes unused imports, normalizes whitespace, and summarizes large methods.
-
-4. **🧠 Agent Reasoning** — The Planner decomposes the goal into sub-checks. The Executor runs each check with MRC context. The Evaluator scores confidence (0-1) and identifies gaps. If confidence < 0.7, it **re-plans and retries** (up to 3 iterations).
-
-5. **📋 Delivery** — Findings are deduplicated, severity-ranked, and delivered via CLI tables, JSON API, or VS Code webview panels.
-
----
-
-## 🚀 Quick Start
-
-### Installation
+### 3. Run Security Analysis
 
 ```bash
-git clone https://github.com/SAdreasgamer/EndPointIQ.git
-cd EndPointIQ
-uv sync    # or: pip install -e .
-```
-
-### Try It
-
-```bash
-# Initialize & scan a project
-eiq init examples/demo-api
-
-# List all endpoints
-eiq endpoints examples/demo-api
-
-# Security analysis
+# Run security checks on a specific route
 eiq security "DELETE /:id" --project-dir examples/demo-api
-
-# Full analysis (security + performance + architecture)
-eiq analyze "POST /" --project-dir examples/demo-api
-
-# Dependency graph visualization
-eiq graph "POST /" --project-dir examples/demo-api
-
-# JSON output for CI/CD
-eiq security "DELETE /:id" --project-dir examples/demo-api --format json
-
-# Start REST API server
-eiq serve
 ```
 
-### Enable LLM Reasoning (Optional)
+```
+╭──────────────── 🔒 Security Analysis: DELETE /:id ─────────────────╮
+│ ┏━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓│
+│ ┃     ┃ Severity   ┃ Title                     ┃ File            ┃│
+│ ┡━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩│
+│ │ 🔴  │ CRITICAL   │ Missing Authentication    │ userRoutes.ts   ││
+│ │ 🟡  │ MEDIUM     │ Missing Rate Limiting     │ userRoutes.ts   ││
+│ └─────┴────────────┴───────────────────────────┴─────────────────┘│
+╰───────────────────────────────────────────────────────────────────╯
+```
 
-Create a `.env` file with your free [Groq API key](https://console.groq.com/keys):
+### 4. Optional: Enable LLM Reasoning
+
+Add a free [Groq API key](https://console.groq.com/keys) to `.env`:
 
 ```bash
 GROQ_API_KEY=gsk_your_key_here
 ```
 
-This upgrades the agent from static analysis to **deep semantic reasoning** — catching IDOR, business logic bypasses, and subtle injection patterns.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| **AI Agent** | LangGraph + LangChain | StateGraph with conditional routing, checkpointing, re-plan loops |
-| **LLM** | Groq Cloud (Qwen 3.6 27B) | 500+ tokens/sec inference, free tier |
-| **AST Parsing** | tree-sitter | Incremental parsing, multi-language support |
-| **Knowledge Graph** | NetworkX | Directed graph with typed edges, PageRank, cycle detection |
-| **Token Counting** | tiktoken | Exact token measurement for budget control |
-| **CLI** | Typer + Rich | Beautiful terminal UI with panels, tables, trees |
-| **API Server** | FastAPI + Uvicorn | Async REST API with auto-generated OpenAPI docs |
-| **Data Models** | Pydantic v2 | Strict validation, JSON serialization |
-| **Database** | SQLAlchemy + SQLite | File-level metadata, analysis history |
-| **VS Code** | TypeScript | Sidebar tree, webview reports, status bar |
-| **Testing** | pytest (93 tests) | Unit + integration, CLI + API coverage |
-| **Quality** | ruff + mypy | Zero lint errors, full type safety |
-| **Package** | uv | Fast dependency resolution, lockfile |
-
----
-
-## 📋 CLI Reference
-
-| Command | Description |
-|---------|-------------|
-| `eiq init <dir>` | Initialize project, run first index, display summary |
-| `eiq index <dir>` | Re-run full index |
-| `eiq endpoints <dir>` | List all discovered endpoints in a table |
-| `eiq security <endpoint>` | Run security analysis |
-| `eiq performance <endpoint>` | Run performance analysis |
-| `eiq analyze <endpoint>` | Full analysis (all engines) |
-| `eiq graph <endpoint>` | Dependency tree visualization |
-| `eiq serve` | Start FastAPI server on port 8421 |
-| `eiq version` | Print version |
-
-All analysis commands support `--format json` for CI/CD pipelines.
-
----
-
-## 🔌 REST API
-
-Start: `eiq serve` → Docs: `http://localhost:8421/docs`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Health check + version |
-| `POST` | `/api/projects` | Register & index a project |
-| `GET` | `/api/projects/{id}` | Project status |
-| `GET` | `/api/endpoints` | List discovered endpoints |
-| `POST` | `/api/analysis` | Run analysis (security/performance/full) |
-| `GET` | `/api/analysis/{id}` | Retrieve stored report |
-| `GET` | `/api/graph/{endpoint}` | Endpoint subgraph as JSON |
+Now `eiq analyze "POST /" --project-dir examples/demo-api` activates the multi-agent review pipeline for deep semantic vulnerability detection.
 
 ---
 
 ## 🧩 VS Code Extension
 
-The extension connects to the FastAPI server and provides:
+EndpointIQ includes a native TypeScript VS Code extension (`vscode-extension/`):
 
-- **🛡️ Sidebar Tree View** — All endpoints listed with HTTP method icons
-- **📋 Webview Reports** — Color-coded findings with severity, file paths, recommendations
-- **📊 Status Bar** — Server connection status and endpoint count
-- **🖱️ Right-click Analysis** — Security, performance, or full analysis on any endpoint
+- **Sidebar TreeView**: Lists all API routes with HTTP-method-specific icons (`GET`, `POST`, `DELETE`).
+- **Interactive Webview**: Displays side-by-side formatted reports with severity badges, line links, and recommendations.
+- **Status Bar Integration**: Shows server health and indexed endpoint count in real time.
 
 ```bash
-# Install
-cd vscode-extension && npm install && npm run compile
+# Compile and install extension
+cd vscode-extension
+npm install && npm run compile
 code --install-extension endpointiq-0.1.0.vsix
 
-# Start backend
+# Start the background daemon
 eiq serve
 ```
 
 ---
 
-## 🔒 What It Catches
+## 🛠️ Tech Stack
 
-### Security Analysis
-
-| Check | Severity | Detection Method |
-|-------|----------|-----------------|
-| Missing Authentication | 🔴 CRITICAL | No `SECURED_BY` edges on mutation endpoints |
-| IDOR / Broken Access Control | 🔴 CRITICAL | LLM semantic analysis of route params |
-| SQL/NoSQL Injection | 🔴 CRITICAL | String interpolation in query calls |
-| Missing Input Validation | 🟠 HIGH | No validation middleware on POST/PUT |
-| Missing Rate Limiting | 🟡 MEDIUM | Mutation endpoints without rate limiter |
-| Missing Security Headers | 🔵 LOW | No Helmet/CORS middleware detected |
-
-### Performance Analysis
-
-| Check | Severity | Detection Method |
-|-------|----------|-----------------|
-| N+1 Queries | 🟠 HIGH | Loop containing DB calls (AST pattern) |
-| Missing Pagination | 🟡 MEDIUM | List endpoints without limit/offset |
-| Missing Cache | 🟡 MEDIUM | GET endpoints hitting DB without cache layer |
-| SELECT * | 🟡 MEDIUM | Fetching all columns pattern |
-
-### Architecture Analysis
-
-| Check | Severity | Detection Method |
-|-------|----------|-----------------|
-| Layer Violations | 🟠 HIGH | Controller directly calls Repository |
-| Circular Dependencies | 🟡 MEDIUM | `networkx.simple_cycles()` on dependency graph |
-| High Coupling | 🟡 MEDIUM | Nodes with >10 outbound edges |
-| God Classes | 🔵 LOW | Classes with >15 methods or >500 lines |
+| Component | Technology | Purpose |
+|:---|:---|:---|
+| **Language** | Python 3.12 | Core indexing engine, graph algorithms, and analysis pipeline |
+| **AST Parsing** | `tree-sitter` | High-throughput multi-language syntax tree extraction |
+| **Dependency Graph** | `networkx` | In-memory directed graph modeling endpoints, middleware, and services |
+| **Local Daemon** | `FastAPI` + `uvicorn` | Lightweight REST API bridge for IDE and CI integrations |
+| **Token Measurement** | `tiktoken` | Exact cl100k_base token counting for budget control |
+| **CLI** | `typer` + `rich` | Terminal interface with formatted tables, trees, and panels |
+| **Agent Pipeline** | `langgraph` + `langchain` | Cyclical StateGraph with self-reflection and confidence scoring |
+| **IDE Extension** | TypeScript + VS Code API | Native editor sidebar, webviews, and command palette actions |
+| **Testing** | `pytest` | 93 automated unit and integration tests |
+| **Code Quality** | `ruff` + `mypy` | Strict typing and linting compliance |
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-# Run all 93 tests
+# Run all 93 unit and integration tests
 uv run pytest -v
 
-# Type checking
+# Run type checking
 uv run mypy src/
 
-# Linting
+# Run linter
 uv run ruff check .
-
-# Token savings benchmark
-uv run python benchmarks/token_comparison.py examples/demo-api "DELETE /:id"
 ```
 
 ---
@@ -395,40 +268,20 @@ uv run python benchmarks/token_comparison.py examples/demo-api "DELETE /:id"
 EndPointIQ/
 ├── src/endpointiq/
 │   ├── core/              # Config, DB, events, models
-│   ├── observation/        # File watcher, AST parser, indexer, plugins
-│   │   └── plugins/        # Framework-specific (Express.js)
-│   ├── knowledge/          # NetworkX knowledge graph
-│   ├── context/            # MRC extractor, compression pipeline
-│   ├── agent/              # LangGraph agents, prompts, tools
-│   ├── analysis/           # Security, performance, architecture engines
-│   ├── cli/                # Typer CLI app + FastAPI server
-│   └── models/             # Pydantic data models
-├── vscode-extension/       # TypeScript VS Code extension
-├── benchmarks/             # Token savings comparison
-├── examples/demo-api/      # Sample Express.js project with vulnerabilities
-└── tests/                  # 93 tests (Day 1-6)
+│   ├── observation/       # AST parser (tree-sitter), indexer, express plugin
+│   ├── knowledge/         # In-memory dependency graph (NetworkX)
+│   ├── context/           # Minimal Relevant Context (MRC) extractor
+│   ├── agent/             # LangGraph multi-agent analysis loop
+│   ├── analysis/          # Rule-based security & performance engines
+│   └── cli/               # Typer CLI commands & FastAPI server
+├── vscode-extension/      # TypeScript VS Code extension
+├── benchmarks/            # Benchmark suite (run_benchmark.py, ground_truth.json)
+├── examples/demo-api/     # Sample Express.js codebase with test vulnerabilities
+└── tests/                 # 93 automated pytest suites
 ```
-
----
-
-## 🗺️ Roadmap
-
-- [ ] **FastAPI / Django / Flask plugins** — Framework-agnostic analysis
-- [ ] **WebSocket live updates** — Real-time analysis progress streaming
-- [ ] **GitHub Action** — Run analysis on every PR automatically
-- [ ] **Custom rules DSL** — Define your own analysis checks
-- [ ] **Multi-repo analysis** — Analyze microservice architectures
-- [ ] **VS Code inline diagnostics** — Findings as squiggly underlines in the editor
-- [ ] **Ollama integration** — Run the full agent pipeline 100% offline
 
 ---
 
 ## 📄 License
 
-MIT
-
----
-
-<p align="center">
-  Built with 🔥 by <a href="https://github.com/SAdreasgamer">SAdreasgamer</a>
-</p>
+MIT License. Built with clean architecture and reproducible benchmarks by [SAdreasgamer](https://github.com/SAdreasgamer).

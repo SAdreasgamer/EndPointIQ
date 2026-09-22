@@ -194,17 +194,26 @@ class SymbolExtractor:
                 )
                 symbols.append(sym)
 
+        # Variable declarations (const/let/var functions, arrow functions, and objects)
+        if node_type == "variable_declarator":
+            self._extract_variable_declarator_ts(node, symbols, parent_class)
+
         # Import statements
         if node_type == "import_statement":
             imp = self._parse_import_ts(node)
             if imp:
                 imports.append(imp)
+        elif node_type in ("lexical_declaration", "variable_declaration", "expression_statement", "assignment_expression"):
+            req_imports = self._parse_require_ts_js(node)
+            imports.extend(req_imports)
 
         # Export statements
         if node_type == "export_statement":
-            exp = self._parse_export_ts(node)
-            if exp:
-                exports.append(exp)
+            exps = self._parse_export_ts(node)
+            exports.extend(exps)
+        elif node_type in ("expression_statement", "assignment_expression"):
+            cjs_exports = self._parse_cjs_exports(node)
+            exports.extend(cjs_exports)
 
         # Recurse into children
         for child in node.children:
@@ -254,9 +263,8 @@ class SymbolExtractor:
 
         # Import statements
         if node_type in ("import_statement", "import_from_statement"):
-            imp = self._parse_import_py(node)
-            if imp:
-                imports.append(imp)
+            py_imports = self._parse_import_py(node)
+            imports.extend(py_imports)
 
         # Recurse
         for child in node.children:
@@ -353,49 +361,298 @@ class SymbolExtractor:
     def _parse_import_ts(node) -> Import | None:
         """Parse a TypeScript/JavaScript import statement."""
         try:
-            # Extract module path from the source
+            module = None
+            names = []
+            is_default = False
+            is_namespace = False
+            alias = None
+
             for child in node.children:
                 if child.type == "string":
                     module = child.text.decode("utf-8").strip("'\"") if isinstance(child.text, bytes) else child.text.strip("'\"")
-                    return Import(
-                        module=module,
-                        names=[],  # simplified — full parsing in Phase 2
-                        line=node.start_point[0] + 1,
-                    )
+                elif child.type == "import_clause":
+                    for sub in child.children:
+                        if sub.type == "identifier":
+                            # Default import: import defaultAuth from './auth'
+                            name = sub.text.decode("utf-8") if isinstance(sub.text, bytes) else sub.text
+                            names.append(name)
+                            is_default = True
+                            alias = name
+                        elif sub.type == "namespace_import":
+                            # Namespace import: import * as allAuth from './all'
+                            is_namespace = True
+                            for n in sub.children:
+                                if n.type == "identifier":
+                                    name = n.text.decode("utf-8") if isinstance(n.text, bytes) else n.text
+                                    names.append(name)
+                                    alias = name
+                        elif sub.type == "named_imports":
+                            # Named imports: import { a, b as c } from './foo'
+                            for spec in sub.children:
+                                if spec.type == "import_specifier":
+                                    name_node = spec.child_by_field_name("name")
+                                    alias_node = spec.child_by_field_name("alias")
+                                    if not name_node:
+                                        id_children = [c for c in spec.children if c.type == "identifier"]
+                                        if len(id_children) == 1:
+                                            name_node = id_children[0]
+                                        elif len(id_children) >= 2:
+                                            name_node = id_children[0]
+                                            alias_node = id_children[1]
+
+                                    if name_node:
+                                        orig_name = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+                                        names.append(orig_name)
+                                        if alias_node:
+                                            local_alias = alias_node.text.decode("utf-8") if isinstance(alias_node.text, bytes) else alias_node.text
+                                            if local_alias and local_alias != orig_name:
+                                                names.append(local_alias)
+
+            if module:
+                return Import(
+                    module=module,
+                    names=names,
+                    is_default=is_default,
+                    is_namespace=is_namespace,
+                    alias=alias,
+                    line=node.start_point[0] + 1,
+                )
         except Exception:
             pass
         return None
 
     @staticmethod
-    def _parse_import_py(node) -> Import | None:
+    def _parse_require_ts_js(node) -> list[Import]:
+        """Parse CommonJS require statements like const x = require('./x')."""
+        results: list[Import] = []
+        try:
+            line = node.start_point[0] + 1
+            for decl in node.children:
+                if decl.type == "variable_declarator":
+                    val = decl.child_by_field_name("value")
+                    name_node = decl.child_by_field_name("name")
+                    if not val or not name_node:
+                        children = [c for c in decl.children if c.type not in ("=",)]
+                        if len(children) >= 2:
+                            name_node, val = children[0], children[1]
+                    if val and val.type == "call_expression":
+                        func = val.child_by_field_name("function") or (val.children[0] if val.children else None)
+                        if not func:
+                            continue
+                        fname = func.text.decode("utf-8") if isinstance(func.text, bytes) else func.text
+                        if fname == "require":
+                            args = val.child_by_field_name("arguments")
+                            module = None
+                            if args:
+                                for arg in args.children:
+                                    if arg.type == "string":
+                                        module = arg.text.decode("utf-8").strip("'\"") if isinstance(arg.text, bytes) else arg.text.strip("'\"")
+                                        break
+                            if module:
+                                names: list[str] = []
+                                is_default = False
+                                if name_node.type == "identifier":
+                                    id_name = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+                                    names.append(id_name)
+                                    is_default = True
+                                elif name_node.type == "object_pattern":
+                                    for prop in name_node.children:
+                                        if prop.type in ("shorthand_property_identifier_pattern", "identifier"):
+                                            pname = prop.text.decode("utf-8") if isinstance(prop.text, bytes) else prop.text
+                                            names.append(pname)
+                                        elif prop.type == "pair_pattern":
+                                            key = prop.child_by_field_name("key")
+                                            val_sub = prop.child_by_field_name("value")
+                                            if key:
+                                                names.append(key.text.decode("utf-8") if isinstance(key.text, bytes) else key.text)
+                                            if val_sub and val_sub != key:
+                                                names.append(val_sub.text.decode("utf-8") if isinstance(val_sub.text, bytes) else val_sub.text)
+                                results.append(Import(
+                                    module=module,
+                                    names=names,
+                                    is_default=is_default,
+                                    line=line,
+                                ))
+
+            # Check for barrel re-exports: module.exports.xxx = require('./xxx') or exports.xxx = require('./xxx')
+            assign = node if node.type == "assignment_expression" else None
+            if not assign and node.type == "expression_statement":
+                for c in node.children:
+                    if c.type == "assignment_expression":
+                        assign = c
+                        break
+            if assign:
+                left = assign.child_by_field_name("left")
+                right = assign.child_by_field_name("right")
+                if right and right.type == "call_expression":
+                    func = right.child_by_field_name("function")
+                    func_name = func.text.decode("utf-8") if isinstance(func.text, bytes) else (func.text if func else "")
+                    if func_name == "require":
+                        args = right.child_by_field_name("arguments")
+                        module = None
+                        if args:
+                            for a in args.children:
+                                if a.type == "string":
+                                    module = a.text.decode("utf-8").strip("'\"") if isinstance(a.text, bytes) else a.text.strip("'\"")
+                                    break
+                        if module and left:
+                            left_text = left.text.decode("utf-8") if isinstance(left.text, bytes) else left.text
+                            prop = left_text.split(".")[-1]
+                            if prop not in ("exports", "module"):
+                                results.append(Import(module=module, names=[prop], line=line))
+                            else:
+                                results.append(Import(module=module, names=[], is_default=True, line=line))
+        except Exception:
+            pass
+        return results
+
+    def _extract_variable_declarator_ts(self, node, symbols: list[Symbol], parent_class: str | None = None):
+        """Extract functions, methods, or objects declared via const/let/var."""
+        # Only extract top-level / module-level or class-level declarations, not inner local variables
+        curr = node.parent
+        while curr:
+            if curr.type in ("function_declaration", "arrow_function", "function_expression", "method_definition"):
+                return
+            curr = curr.parent
+
+        name_node = node.child_by_field_name("name")
+        val_node = node.child_by_field_name("value")
+        if not name_node or name_node.type != "identifier" or not val_node:
+            return
+
+        var_name = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+        if not var_name:
+            return
+
+        qualified = f"{parent_class}.{var_name}" if parent_class else var_name
+        line_start = node.start_point[0] + 1
+        line_end = node.end_point[0] + 1
+
+        # 1. Direct function: const foo = () => {} or const foo = function() {}
+        if val_node.type in ("arrow_function", "function_expression"):
+            params = self._get_parameters_ts(val_node)
+            sym = Symbol(
+                name=var_name,
+                qualified_name=qualified,
+                kind="function",
+                file_path=self.file_path,
+                line_start=line_start,
+                line_end=line_end,
+                parameters=params,
+                parent=parent_class,
+            )
+            symbols.append(sym)
+            return
+
+        # 2. Wrapped function: const login = catchAsync(async (req, res) => {})
+        if val_node.type == "call_expression":
+            args = val_node.child_by_field_name("arguments")
+            has_fn_arg = False
+            if args:
+                has_fn_arg = any(a.type in ("arrow_function", "function_expression") for a in args.children)
+            if has_fn_arg:
+                sym = Symbol(
+                    name=var_name,
+                    qualified_name=qualified,
+                    kind="function",
+                    file_path=self.file_path,
+                    line_start=line_start,
+                    line_end=line_end,
+                    parent=parent_class,
+                )
+                symbols.append(sym)
+                return
+
+        # 3. Object with methods: const auth = { required: jwt(), optional: jwt() }
+        if val_node.type == "object":
+            sym = Symbol(
+                name=var_name,
+                qualified_name=qualified,
+                kind="variable",
+                file_path=self.file_path,
+                line_start=line_start,
+                line_end=line_end,
+                parent=parent_class,
+            )
+            symbols.append(sym)
+            for child in val_node.children:
+                if child.type == "pair":
+                    key = child.child_by_field_name("key")
+                    if key:
+                        kname = key.text.decode("utf-8") if isinstance(key.text, bytes) else key.text
+                        qname = f"{var_name}.{kname}"
+                        prop_sym = Symbol(
+                            name=kname,
+                            qualified_name=qname,
+                            kind="function",
+                            file_path=self.file_path,
+                            line_start=child.start_point[0] + 1,
+                            line_end=child.end_point[0] + 1,
+                            parent=var_name,
+                        )
+                        symbols.append(prop_sym)
+
+    @staticmethod
+    def _parse_import_py(node) -> list[Import]:
         """Parse a Python import statement."""
+        imports: list[Import] = []
         try:
-            if node.type == "import_from_statement":
+            line = node.start_point[0] + 1
+            if node.type == "import_statement":
                 for child in node.children:
                     if child.type == "dotted_name":
-                        module = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
-                        return Import(
-                            module=module,
-                            names=[],
-                            line=node.start_point[0] + 1,
-                        )
-            elif node.type == "import_statement":
+                        mod = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
+                        imports.append(Import(module=mod, names=[mod], line=line))
+                    elif child.type == "aliased_import":
+                        name_node = child.child_by_field_name("name")
+                        alias_node = child.child_by_field_name("alias")
+                        if name_node:
+                            mod = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+                            al = alias_node.text.decode("utf-8") if isinstance(alias_node.text, bytes) else (alias_node.text if alias_node else None)
+                            names = [mod, al] if al else [mod]
+                            imports.append(Import(module=mod, names=names, alias=al, line=line))
+            elif node.type == "import_from_statement":
+                module_name = ""
+                names = []
+                is_after_import = False
                 for child in node.children:
-                    if child.type == "dotted_name":
-                        module = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
-                        return Import(
-                            module=module,
-                            names=[module],
-                            line=node.start_point[0] + 1,
-                        )
+                    if child.type == "from":
+                        continue
+                    elif child.type == "import":
+                        is_after_import = True
+                        continue
+
+                    if not is_after_import:
+                        if child.type in ("dotted_name", "relative_import"):
+                            module_name = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
+                    else:
+                        if child.type == "dotted_name":
+                            n = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
+                            names.append(n)
+                        elif child.type == "aliased_import":
+                            name_node = child.child_by_field_name("name")
+                            alias_node = child.child_by_field_name("alias")
+                            if name_node:
+                                orig = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+                                names.append(orig)
+                            if alias_node:
+                                al = alias_node.text.decode("utf-8") if isinstance(alias_node.text, bytes) else alias_node.text
+                                if al and al not in names:
+                                    names.append(al)
+                        elif child.type == "wildcard_import":
+                            names.append("*")
+                if module_name:
+                    imports.append(Import(module=module_name, names=names, line=line))
         except Exception:
             pass
-        return None
+        return imports
 
     @staticmethod
-    def _parse_export_ts(node) -> Export | None:
+    def _parse_export_ts(node) -> list[Export]:
         """Parse a TypeScript/JavaScript export statement."""
+        exports: list[Export] = []
         try:
+            line = node.start_point[0] + 1
             is_default = any(
                 c.type == "default" or (isinstance(c.text, bytes) and c.text == b"default")
                 for c in node.children
@@ -409,10 +666,71 @@ class SymbolExtractor:
                             break
                     if name_node:
                         name = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
-                        return Export(name=name, is_default=is_default, line=node.start_point[0] + 1)
+                        exports.append(Export(name=name, is_default=is_default, line=line))
+                elif child.type in ("lexical_declaration", "variable_declaration"):
+                    for decl in child.children:
+                        if decl.type == "variable_declarator":
+                            name_node = decl.child_by_field_name("name")
+                            if name_node:
+                                name = name_node.text.decode("utf-8") if isinstance(name_node.text, bytes) else name_node.text
+                                exports.append(Export(name=name, is_default=is_default, line=line))
+                elif child.type == "export_clause":
+                    for spec in child.children:
+                        if spec.type == "export_specifier":
+                            alias_node = spec.child_by_field_name("alias")
+                            name_node = spec.child_by_field_name("name")
+                            target = alias_node or name_node
+                            if not target:
+                                ids = [c for c in spec.children if c.type == "identifier"]
+                                target = ids[-1] if ids else None
+                            if target:
+                                name = target.text.decode("utf-8") if isinstance(target.text, bytes) else target.text
+                                exports.append(Export(name=name, is_default=is_default, line=line))
+                elif is_default and child.type == "identifier":
+                    name = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
+                    exports.append(Export(name=name, is_default=True, line=line))
         except Exception:
             pass
-        return None
+        return exports
+
+    @staticmethod
+    def _parse_cjs_exports(node) -> list[Export]:
+        """Parse CommonJS exports like module.exports = { a, b } or module.exports = router."""
+        exports: list[Export] = []
+        try:
+            line = node.start_point[0] + 1
+            assign = node if node.type == "assignment_expression" else None
+            if not assign and node.type == "expression_statement":
+                for c in node.children:
+                    if c.type == "assignment_expression":
+                        assign = c
+                        break
+            if assign:
+                left = assign.child_by_field_name("left")
+                right = assign.child_by_field_name("right")
+                if left and right:
+                    left_text = left.text.decode("utf-8") if isinstance(left.text, bytes) else left.text
+                    if left_text in ("module.exports", "exports"):
+                        if right.type == "object":
+                            for child in right.children:
+                                if child.type == "shorthand_property_identifier":
+                                    pname = child.text.decode("utf-8") if isinstance(child.text, bytes) else child.text
+                                    exports.append(Export(name=pname, is_default=False, line=line))
+                                elif child.type == "pair":
+                                    k = child.child_by_field_name("key")
+                                    if k:
+                                        pname = k.text.decode("utf-8") if isinstance(k.text, bytes) else k.text
+                                        exports.append(Export(name=pname, is_default=False, line=line))
+                        elif right.type == "identifier":
+                            rname = right.text.decode("utf-8") if isinstance(right.text, bytes) else right.text
+                            exports.append(Export(name=rname, is_default=True, line=line))
+                    elif left_text.startswith("module.exports.") or left_text.startswith("exports."):
+                        prop = left_text.split(".")[-1]
+                        if prop not in ("exports", "module"):
+                            exports.append(Export(name=prop, is_default=False, line=line))
+        except Exception:
+            pass
+        return exports
 
 
 # ── Main Parser ───────────────────────────────────────

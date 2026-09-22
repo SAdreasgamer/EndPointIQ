@@ -35,7 +35,7 @@ load_dotenv()
 # ── Config ────────────────────────────────────────────
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-MODEL = "qwen/qwen3.6-27b"
+MODEL = "qwen/qwen3.8-27b"
 # Groq pricing (per 1M tokens) — approximate
 COST_PER_1M_INPUT = 0.20   # $0.20 per 1M input tokens
 COST_PER_1M_OUTPUT = 0.60  # $0.60 per 1M output tokens

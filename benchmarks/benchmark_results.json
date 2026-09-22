@@ -1,0 +1,781 @@
+{
+  "timestamp": "2026-09-21 21:00:09 UTC",
+  "total_endpoints": 36,
+  "repos": [
+    {
+      "name": "demo-api",
+      "language": "TypeScript",
+      "total_loc": 88,
+      "total_files": 5,
+      "total_source_tokens": 577,
+      "endpoints_discovered": 9,
+      "indexing_time_ms": 16,
+      "indexing_throughput": 312.5,
+      "graph_nodes": 29,
+      "graph_edges": 18,
+      "endpoints": [
+        {
+          "name": "GET /health",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 44,
+          "token_reduction_pct": 92.37,
+          "nodes_selected": 2,
+          "extraction_time_ms": 205,
+          "mrc_files": [
+            "src/app.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "GET /",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 46,
+          "token_reduction_pct": 92.03,
+          "nodes_selected": 2,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/userRoutes.ts"
+          ],
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        },
+        {
+          "name": "GET /:id",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 56,
+          "token_reduction_pct": 90.29,
+          "nodes_selected": 2,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/userRoutes.ts"
+          ],
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        },
+        {
+          "name": "POST /",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 254,
+          "token_reduction_pct": 55.98,
+          "nodes_selected": 6,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/userRoutes.ts",
+            "src/middleware/validate.ts",
+            "src/middleware/auth.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.6666666666666666,
+          "f1": 0.8
+        },
+        {
+          "name": "PUT /:id",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 254,
+          "token_reduction_pct": 55.98,
+          "nodes_selected": 6,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/userRoutes.ts",
+            "src/middleware/validate.ts",
+            "src/middleware/auth.ts"
+          ],
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        },
+        {
+          "name": "DELETE /:id",
+          "full_dump_tokens": 577,
+          "mrc_tokens": 56,
+          "token_reduction_pct": 90.29,
+          "nodes_selected": 2,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/userRoutes.ts"
+          ],
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        }
+      ]
+    },
+    {
+      "name": "realworld-express",
+      "language": "TypeScript",
+      "total_loc": 2489,
+      "total_files": 39,
+      "total_source_tokens": 13702,
+      "endpoints_discovered": 20,
+      "indexing_time_ms": 78,
+      "indexing_throughput": 500.0,
+      "graph_nodes": 150,
+      "graph_edges": 209,
+      "endpoints": [
+        {
+          "name": "GET /articles",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3998,
+          "token_reduction_pct": 70.82,
+          "nodes_selected": 45,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts",
+            "src/app/routes/article/author.mapper.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.5,
+          "f1": 0.6666666666666666
+        },
+        {
+          "name": "GET /articles/feed",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 46,
+          "extraction_time_ms": 11,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts",
+            "src/app/routes/article/author.mapper.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /articles",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 46,
+          "extraction_time_ms": 11,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts",
+            "src/app/routes/article/author.mapper.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.5,
+          "f1": 0.6666666666666666
+        },
+        {
+          "name": "GET /articles/:slug",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3998,
+          "token_reduction_pct": 70.82,
+          "nodes_selected": 45,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts",
+            "src/app/routes/article/author.mapper.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "PUT /articles/:slug",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 46,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts",
+            "src/app/routes/article/author.mapper.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "DELETE /articles/:slug",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 38,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.6,
+          "f1": 0.7499999999999999
+        },
+        {
+          "name": "GET /articles/:slug/comments",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3997,
+          "token_reduction_pct": 70.83,
+          "nodes_selected": 41,
+          "extraction_time_ms": 9,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /articles/:slug/comments",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3995,
+          "token_reduction_pct": 70.84,
+          "nodes_selected": 40,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "DELETE /articles/:slug/comments/:id",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3997,
+          "token_reduction_pct": 70.83,
+          "nodes_selected": 38,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /articles/:slug/favorite",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 4000,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 48,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/profile/profile.utils.ts",
+            "src/app/routes/auth/auth.service.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "DELETE /articles/:slug/favorite",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 48,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/profile/profile.utils.ts",
+            "src/app/routes/auth/auth.service.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /users",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 1787,
+          "token_reduction_pct": 86.96,
+          "nodes_selected": 28,
+          "extraction_time_ms": 3,
+          "mrc_files": [
+            "src/app/routes/auth/auth.service.ts",
+            "src/prisma/seed.ts",
+            "src/app/routes/auth/token.utils.ts",
+            "src/app/routes/auth/auth.controller.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.6,
+          "f1": 0.7499999999999999
+        },
+        {
+          "name": "POST /users/login",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 1760,
+          "token_reduction_pct": 87.16,
+          "nodes_selected": 25,
+          "extraction_time_ms": 3,
+          "mrc_files": [
+            "src/app/routes/auth/auth.service.ts",
+            "src/prisma/seed.ts",
+            "src/app/routes/auth/token.utils.ts",
+            "src/app/routes/auth/auth.controller.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.6,
+          "f1": 0.7499999999999999
+        },
+        {
+          "name": "GET /user",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 43,
+          "extraction_time_ms": 11,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.service.ts",
+            "src/app/routes/auth/token.utils.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/auth/auth.controller.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.375,
+          "f1": 0.5454545454545454
+        },
+        {
+          "name": "PUT /user",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 44,
+          "extraction_time_ms": 11,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/auth/auth.service.ts",
+            "src/app/routes/auth/token.utils.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/auth/auth.controller.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "GET /profiles/:username",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 39,
+          "extraction_time_ms": 9,
+          "mrc_files": [
+            "src/app/routes/profile/profile.utils.ts",
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/profile/profile.service.ts",
+            "src/app/routes/profile/profile.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.375,
+          "f1": 0.5454545454545454
+        },
+        {
+          "name": "POST /profiles/:username/follow",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3995,
+          "token_reduction_pct": 70.84,
+          "nodes_selected": 49,
+          "extraction_time_ms": 10,
+          "mrc_files": [
+            "src/app/routes/profile/profile.utils.ts",
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/profile/profile.service.ts",
+            "src/app/routes/profile/profile.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "DELETE /profiles/:username/follow",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 3996,
+          "token_reduction_pct": 70.84,
+          "nodes_selected": 49,
+          "extraction_time_ms": 9,
+          "mrc_files": [
+            "src/app/routes/profile/profile.utils.ts",
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/profile/profile.service.ts",
+            "src/app/routes/profile/profile.controller.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/article/article.mapper.ts",
+            "src/app/models/http-exception.model.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "GET /tags",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 4000,
+          "token_reduction_pct": 70.81,
+          "nodes_selected": 41,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/app/routes/article/article.controller.ts",
+            "src/app/routes/tag/tag.service.ts",
+            "src/app/routes/profile/profile.service.ts",
+            "src/app/routes/auth/auth.ts",
+            "src/app/routes/article/article.service.ts",
+            "src/app/routes/auth/auth.controller.ts",
+            "src/app/routes/tag/tag.controller.ts",
+            "src/app/routes/article/article.mapper.ts"
+          ],
+          "recall": 1.0,
+          "precision": 0.25,
+          "f1": 0.4
+        },
+        {
+          "name": "GET /",
+          "full_dump_tokens": 13702,
+          "mrc_tokens": 64,
+          "token_reduction_pct": 99.53,
+          "nodes_selected": 2,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/main.ts"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        }
+      ]
+    },
+    {
+      "name": "express-boilerplate",
+      "language": "JavaScript",
+      "total_loc": 3856,
+      "total_files": 50,
+      "total_source_tokens": 27165,
+      "endpoints_discovered": 10,
+      "indexing_time_ms": 144,
+      "indexing_throughput": 347.22222222222223,
+      "graph_nodes": 260,
+      "graph_edges": 396,
+      "endpoints": [
+        {
+          "name": "OPTIONS *",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 9,
+          "token_reduction_pct": 99.97,
+          "nodes_selected": 2,
+          "extraction_time_ms": 2,
+          "mrc_files": [
+            "src/app.js"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /register",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3977,
+          "token_reduction_pct": 85.36,
+          "nodes_selected": 86,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/validations/user.validation.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": 1.0,
+          "precision": 0.3333333333333333,
+          "f1": 0.5
+        },
+        {
+          "name": "POST /login",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3991,
+          "token_reduction_pct": 85.31,
+          "nodes_selected": 89,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/validations/user.validation.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/config/tokens.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": 1.0,
+          "precision": 0.25,
+          "f1": 0.4
+        },
+        {
+          "name": "POST /logout",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3983,
+          "token_reduction_pct": 85.34,
+          "nodes_selected": 87,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/validations/user.validation.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/config/tokens.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /refresh-tokens",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3989,
+          "token_reduction_pct": 85.32,
+          "nodes_selected": 88,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/validations/user.validation.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/config/tokens.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "POST /forgot-password",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3985,
+          "token_reduction_pct": 85.33,
+          "nodes_selected": 84,
+          "extraction_time_ms": 7,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/config/logger.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/validations/user.validation.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": 1.0,
+          "precision": 0.25,
+          "f1": 0.4
+        },
+        {
+          "name": "POST /reset-password",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3989,
+          "token_reduction_pct": 85.32,
+          "nodes_selected": 88,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/validations/user.validation.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/config/tokens.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": 1.0,
+          "precision": 0.25,
+          "f1": 0.4
+        },
+        {
+          "name": "POST /send-verification-email",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3999,
+          "token_reduction_pct": 85.28,
+          "nodes_selected": 90,
+          "extraction_time_ms": 9,
+          "mrc_files": [
+            "src/controllers/user.controller.js",
+            "src/validations/user.validation.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js",
+            "src/services/email.service.js",
+            "src/services/user.service.js",
+            "src/config/roles.js",
+            "src/config/tokens.js",
+            "src/models/user.model.js",
+            "src/middlewares/auth.js",
+            "src/routes/v1/auth.route.js",
+            "src/services/token.service.js",
+            "src/services/auth.service.js",
+            "src/validations/auth.validation.js",
+            "tests/fixtures/user.fixture.js",
+            "src/utils/catchAsync.js",
+            "src/config/logger.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js"
+          ],
+          "recall": 1.0,
+          "precision": 0.21052631578947367,
+          "f1": 0.34782608695652173
+        },
+        {
+          "name": "POST /verify-email",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 3989,
+          "token_reduction_pct": 85.32,
+          "nodes_selected": 88,
+          "extraction_time_ms": 8,
+          "mrc_files": [
+            "src/routes/v1/auth.route.js",
+            "src/services/email.service.js",
+            "src/validations/user.validation.js",
+            "src/services/user.service.js",
+            "src/services/token.service.js",
+            "src/config/tokens.js",
+            "src/utils/catchAsync.js",
+            "src/services/auth.service.js",
+            "src/controllers/user.controller.js",
+            "src/validations/auth.validation.js",
+            "src/middlewares/auth.js",
+            "src/utils/pick.js",
+            "src/utils/ApiError.js",
+            "src/middlewares/error.js",
+            "src/middlewares/validate.js",
+            "src/controllers/auth.controller.js"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        },
+        {
+          "name": "GET /",
+          "full_dump_tokens": 27165,
+          "mrc_tokens": 42,
+          "token_reduction_pct": 99.85,
+          "nodes_selected": 2,
+          "extraction_time_ms": 1,
+          "mrc_files": [
+            "src/routes/v1/docs.route.js"
+          ],
+          "recall": null,
+          "precision": null,
+          "f1": null
+        }
+      ]
+    }
+  ]
+}

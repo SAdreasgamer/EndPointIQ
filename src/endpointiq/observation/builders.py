@@ -155,7 +155,7 @@ class ImportResolver:
             from_file: The file containing the import (for relative resolution).
 
         Returns:
-            Resolved absolute file path, or None if unresolvable.
+            Resolved project-relative file path, or None if unresolvable.
         """
         if not import_module:
             return None
@@ -171,26 +171,54 @@ class ImportResolver:
             if import_module.startswith(alias_prefix):
                 remainder = import_module[len(alias_prefix):]
                 resolved_base = Path(resolved_prefix) / remainder
-                return self._try_extensions(resolved_base)
+                return self._normalize_path(self._try_extensions(resolved_base))
 
         # Resolve relative imports
         from_dir = Path(from_file).parent
         if not from_dir.is_absolute():
             from_dir = self.project_root / from_dir
 
-        target = from_dir / import_module
-        return self._try_extensions(target)
+        # Handle Python relative imports like '.service' or '..service'
+        rel_module = import_module
+        if rel_module.startswith(".") and not rel_module.startswith("./") and not rel_module.startswith("../"):
+            dots = len(rel_module) - len(rel_module.lstrip("."))
+            rest = rel_module[dots:].replace(".", "/")
+            prefix = "../" * (dots - 1) if dots > 1 else "./"
+            rel_module = prefix + rest
+
+        target = from_dir / rel_module
+        return self._normalize_path(self._try_extensions(target))
+
+    def _normalize_path(self, file_path: str | None) -> str | None:
+        """Normalize a resolved file path to be project-relative.
+
+        Removes '../' segments and makes the path relative to project_root
+        so that node IDs match between the file node and the DEPENDS_ON target.
+        """
+        if not file_path:
+            return None
+        try:
+            abs_path = Path(file_path).resolve()
+            return str(abs_path.relative_to(self.project_root.resolve()))
+        except ValueError:
+            # File is outside project root — return as-is
+            return str(Path(file_path).resolve())
 
     def _try_extensions(self, base_path: Path) -> str | None:
         """Try common file extensions and index files."""
+        s = str(base_path)
         candidates = [
             base_path,
-            base_path.with_suffix(".ts"),
-            base_path.with_suffix(".tsx"),
-            base_path.with_suffix(".js"),
-            base_path.with_suffix(".jsx"),
+            Path(s + ".ts"),
+            Path(s + ".tsx"),
+            Path(s + ".js"),
+            Path(s + ".jsx"),
+            Path(s + ".py"),
             base_path / "index.ts",
             base_path / "index.js",
+            base_path / "__init__.py",
+            base_path.with_suffix(".ts"),
+            base_path.with_suffix(".js"),
         ]
         for candidate in candidates:
             if candidate.exists() and candidate.is_file():
@@ -288,7 +316,11 @@ class DependencyGraphBuilder:
                     target=target_file_id,
                     type=EdgeType.DEPENDS_ON,
                     provenance=file_path,
-                    metadata={"module": imp.module},
+                    metadata={
+                        "module": imp.module,
+                        "names": imp.names,
+                        "is_default": imp.is_default,
+                    },
                 ))
 
         return nodes, edges
@@ -301,11 +333,198 @@ class CallGraphBuilder:
     """Builds CALLS edges by analyzing function call expressions.
 
     Detects patterns like:
-    - this.userService.create(...)  → CALLS edge from method to service method
-    - await repository.save(...)   → CALLS edge from service to repository
-
-    Uses constructor parameter analysis to resolve `this.xxx` references.
+    - this.userService.create(...) → CALLS edge from method to service method
+    - authService.loginUserWithEmailAndPassword(...) → CALLS edge to imported service
+    - getArticles(...) → CALLS edge to imported function
+    - await repository.save(...) → CALLS edge from service to repository
     """
+
+    def build_calls(
+        self,
+        file_path: str,
+        symbols: list[Symbol],
+        handler_nodes: list[GraphNode],
+        imports: list[Import],
+        source: bytes,
+        language: str | None = None,
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        """Build CALLS edges and placeholder callee nodes.
+
+        Analyzes calls inside:
+        - Symbol functions/methods (from AST)
+        - Handler functions from plugins (e.g. express route handlers)
+
+        Returns:
+            Tuple of (placeholder_nodes, call_edges).
+        """
+        nodes: list[GraphNode] = []
+        edges: list[GraphEdge] = []
+
+        # 1. Build caller list
+        callers: list[dict] = []
+        seen_ids: set[str] = set()
+        for sym in symbols:
+            if sym.kind in ("function", "method"):
+                cid = _make_id(sym.kind, sym.qualified_name, file_path)
+                if cid not in seen_ids:
+                    seen_ids.add(cid)
+                    callers.append({
+                        "id": cid,
+                        "name": sym.qualified_name,
+                        "kind": sym.kind,
+                        "line_start": sym.line_start,
+                        "line_end": sym.line_end,
+                    })
+
+        for hnode in handler_nodes:
+            if hnode.type == NodeType.FUNCTION:
+                if hnode.id not in seen_ids:
+                    seen_ids.add(hnode.id)
+                    callers.append({
+                        "id": hnode.id,
+                        "name": hnode.qualified_name,
+                        "kind": "function",
+                        "line_start": hnode.line_start,
+                        "line_end": hnode.line_end,
+                    })
+
+        if not callers:
+            return nodes, edges
+
+        # 2. Collect imported symbols and local symbols
+        imported_symbols: set[str] = set()
+        for imp in imports:
+            for name in imp.names:
+                imported_symbols.add(name)
+            if imp.alias:
+                imported_symbols.add(imp.alias)
+            if imp.is_default and imp.module:
+                imported_symbols.add(imp.module.rsplit("/", 1)[-1])
+
+        file_symbols = {s.name: s for s in symbols}
+        for s in symbols:
+            file_symbols[s.qualified_name] = s
+
+        # 3. Extract calls using tree-sitter AST if available, fallback to regex
+        calls: list[tuple[str, int]] = []
+        if language:
+            try:
+                from tree_sitter_languages import get_parser
+                ts_parser = get_parser(language)
+                tree = ts_parser.parse(source)
+
+                def walk(n):
+                    if language in ("typescript", "tsx", "javascript"):
+                        if n.type == "call_expression":
+                            func = n.child_by_field_name("function")
+                            if func:
+                                if func.type == "identifier":
+                                    calls.append((func.text.decode("utf-8") if isinstance(func.text, bytes) else func.text, n.start_point[0] + 1))
+                                elif func.type == "member_expression":
+                                    obj = func.child_by_field_name("object")
+                                    prop = func.child_by_field_name("property")
+                                    if obj and prop:
+                                        otext = obj.text.decode("utf-8") if isinstance(obj.text, bytes) else obj.text
+                                        ptext = prop.text.decode("utf-8") if isinstance(prop.text, bytes) else prop.text
+                                        calls.append((f"{otext}.{ptext}", n.start_point[0] + 1))
+                    elif language == "python":
+                        if n.type == "call":
+                            func = n.child_by_field_name("function")
+                            if func:
+                                if func.type == "identifier":
+                                    calls.append((func.text.decode("utf-8") if isinstance(func.text, bytes) else func.text, n.start_point[0] + 1))
+                                elif func.type == "attribute":
+                                    obj = func.child_by_field_name("object")
+                                    attr = func.child_by_field_name("attribute")
+                                    if obj and attr:
+                                        otext = obj.text.decode("utf-8") if isinstance(obj.text, bytes) else obj.text
+                                        atext = attr.text.decode("utf-8") if isinstance(attr.text, bytes) else attr.text
+                                        calls.append((f"{otext}.{atext}", n.start_point[0] + 1))
+                    for c in n.children:
+                        walk(c)
+
+                walk(tree.root_node)
+            except Exception:
+                pass
+
+        if not calls:
+            lines = source.decode("utf-8", errors="replace").split("\n")
+            dot_pattern = re.compile(r'(?:this\.)?([a-zA-Z_$][\w$]*)\.([a-zA-Z_$][\w$]*)\s*\(')
+            for idx, line in enumerate(lines, start=1):
+                for m in dot_pattern.finditer(line):
+                    calls.append((f"{m.group(1)}.{m.group(2)}", idx))
+
+        ignore = {
+            "require", "import", "Router", "express", "catchAsync", "Number", "String",
+            "Boolean", "console", "res", "req", "next", "status", "json", "send",
+            "Promise", "Object", "Array", "Math", "Date", "Error", "print", "len",
+            "range", "isinstance", "super", "type", "str", "int", "dict", "list",
+            "set", "tuple", "any", "all", "min", "max",
+        }
+
+        seen_edges: set[tuple[str, str]] = set()
+
+        for callee, line in calls:
+            base = callee.lstrip("this.").split(".")[0]
+            if base in ignore:
+                continue
+
+            # Check if this call is relevant: imported symbol, file symbol, or this.xxx
+            is_relevant = (
+                base in imported_symbols
+                or base in file_symbols
+                or callee.startswith("this.")
+            )
+            if not is_relevant:
+                continue
+
+            # Find enclosing caller
+            enclosing = [c for c in callers if c["line_start"] <= line <= c["line_end"]]
+            if not enclosing:
+                continue
+            tightest = min(enclosing, key=lambda c: c["line_end"] - c["line_start"])
+            source_id = tightest["id"]
+
+            # If callee is defined in the same file:
+            if callee in file_symbols:
+                target_sym = file_symbols[callee]
+                target_id = _make_id(target_sym.kind, target_sym.qualified_name, file_path)
+                edge_key = (source_id, target_id)
+                if edge_key not in seen_edges and source_id != target_id:
+                    seen_edges.add(edge_key)
+                    edges.append(GraphEdge(
+                        source=source_id,
+                        target=target_id,
+                        type=EdgeType.CALLS,
+                        provenance=file_path,
+                        metadata={"caller": tightest["name"], "callee": callee},
+                    ))
+            else:
+                # Imported or external call: create placeholder node
+                target_id = _make_id("function", callee, file_path)
+                edge_key = (source_id, target_id)
+                if edge_key not in seen_edges and source_id != target_id:
+                    seen_edges.add(edge_key)
+                    callee_node = GraphNode(
+                        id=target_id,
+                        type=NodeType.FUNCTION,
+                        qualified_name=callee,
+                        file_path=file_path,
+                        line_start=line,
+                        line_end=line,
+                        provenance=file_path,
+                        metadata={"is_placeholder": True},
+                    )
+                    nodes.append(callee_node)
+                    edges.append(GraphEdge(
+                        source=source_id,
+                        target=target_id,
+                        type=EdgeType.CALLS,
+                        provenance=file_path,
+                        metadata={"caller": tightest["name"], "callee": callee},
+                    ))
+
+        return nodes, edges
 
     def build_from_symbols(
         self,
@@ -313,60 +532,8 @@ class CallGraphBuilder:
         file_path: str,
         source: bytes,
     ) -> list[GraphEdge]:
-        """Build CALLS edges from method bodies within a file.
-
-        Analyzes each method/function body looking for call expressions
-        that reference other symbols (typically via `this.service.method()`).
-
-        Args:
-            symbols: All symbols extracted from the file.
-            file_path: Path to the source file.
-            source: Raw source code for text extraction.
-
-        Returns:
-            List of CALLS edges.
-        """
-        edges: list[GraphEdge] = []
-        lines = source.decode("utf-8", errors="replace").split("\n")
-
-        # Build a map of known symbol names in this file
-        symbol_map: dict[str, Symbol] = {}
-        for sym in symbols:
-            symbol_map[sym.name] = sym
-            symbol_map[sym.qualified_name] = sym
-
-        # For each method, scan its body for call patterns
-        for sym in symbols:
-            if sym.kind not in ("method", "function"):
-                continue
-
-            # Extract method body lines
-            body_start = max(0, sym.line_start - 1)
-            body_end = min(len(lines), sym.line_end)
-            body = "\n".join(lines[body_start:body_end])
-
-            # Find call patterns: this.xxx.yyy() or xxx.yyy()
-            call_pattern = re.compile(
-                r'(?:this\.)?(\w+)\.(\w+)\s*\('
-            )
-            for match in call_pattern.finditer(body):
-                service_name = match.group(1)
-                method_name = match.group(2)
-                target_qualified = f"{service_name}.{method_name}"
-
-                # Create a CALLS edge
-                source_id = _make_id(sym.kind, sym.qualified_name, file_path)
-                target_id = _make_id("method", target_qualified, file_path)
-
-                edges.append(GraphEdge(
-                    source=source_id,
-                    target=target_id,
-                    type=EdgeType.CALLS,
-                    provenance=file_path,
-                    metadata={
-                        "caller": sym.qualified_name,
-                        "callee": target_qualified,
-                    },
-                ))
-
+        """Backward-compatible helper that returns edges from symbols."""
+        from endpointiq.observation.parser import detect_language
+        lang = detect_language(file_path)
+        _, edges = self.build_calls(file_path, symbols, [], [], source, lang)
         return edges
